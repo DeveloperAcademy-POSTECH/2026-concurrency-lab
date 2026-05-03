@@ -12,6 +12,8 @@ Using your **Challenge Statement** as a starting point, you’ll work with [Jaes
 
 You’ll create a final outcome that can be shared on **this repository**, and spend the lab period carrying out your **Act** phase based on your Challenge Response.
 
-📚 Investigate: 2 days
-🔬 Act: 7 days (excluding weekends)
-🎓 Epilogue: 1 day
+| Phase | Duration |
+| --- | --- |
+| 📚 Investigate | 2 days |
+| 🔬 Act | 7 days (weekdays only) |
+| 🎓 Epilogue | 1 day |
