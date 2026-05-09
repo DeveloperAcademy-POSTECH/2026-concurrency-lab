@@ -17,3 +17,13 @@ You’ll create a final outcome that can be shared on **this repository**, and s
 | 📚 Investigate | 2 days |
 | 🔬 Act | 7 days (weekdays only) |
 | 🎓 Epilogue | 1 day |
+
+## Guiding Activities
+
+| Guiding Activities | Guiding Question |
+| --- | --- |
+| **Get started with WWDC sessions** | How can I find the appropriate Apple's development/design sessions for my Challenge? |
+| **Explore existing discussions in the open source community** | What existing discussions or approaches are related to my challenge?</br>Where are these discussions taking place?</br>What gaps or opportunities have been discovered from the existing discussions or approaches? |
+| **Design code with diagrams** | How can I define the structure of my code?</br>How can I map out every branch, condition, and edge case in my logic before it becomes code?</br>How can I trace method calls and data flow between objects at runtime? |
+| **Prepare to open great Pull Request** | How can I help reviewers understand and review my Pull Requests effectively? |
+| **Looks Good to Me - Explore how to communicate for better code** | How can I provide good reviews for Pull Requests? |
