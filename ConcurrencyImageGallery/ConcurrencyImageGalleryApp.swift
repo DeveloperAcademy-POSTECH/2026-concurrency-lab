@@ -11,7 +11,7 @@ import SwiftUI
 struct ConcurrencyImageGalleryApp: App {
     var body: some Scene {
         WindowGroup {
-            TabView()
+            ContentView()
         }
     }
 }

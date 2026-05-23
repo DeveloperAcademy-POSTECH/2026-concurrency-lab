@@ -7,18 +7,24 @@
 
 import SwiftUI
 
-struct TabView: View {
+struct ContentView: View {
     var body: some View {
-        VStack {
-
+        TabView {
+            Tab("Sequential", systemImage: "arrow.down") {
+                EmptyView()
+            }
+            
+            Tab("Parallel", systemImage: "square.grid.2x2") {
+                EmptyView()
+            }
+            
+            Tab("Actor", systemImage: "tray.full") {
+                EmptyView()
+            }
         }
     }
-
-
-
-
 }
 
 #Preview {
-    TabView()
+    ContentView()
 }
