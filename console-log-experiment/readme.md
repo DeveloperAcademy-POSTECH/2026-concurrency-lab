@@ -63,21 +63,13 @@ TBD
 All experiments in this repository follow a standardized tag system to make code intent and learning focus clear.
 
 | Tag | Description | Example |
-
-|-----|------------|--------|
-
+|------|-------------|---------|
 | EXP (Experiment) | 새로운 실험 코드 추가 | `[EXP] add async function for suspension test` |
-
 | OBS (Observe) | 실행 흐름 관찰 내용 추가 | `[OBS] check thread hopping after resumption` |
-
-| LOG (Console Log) | console log 추가/수정 | `[LOG] print thread id before and after await` |
-
-| DOC (Docs) | 문서/README/학습 정리 | `[DOC] document state machine analysis in readme` |
-
+| LOG (Console Log) | Console Log 추가/수정 | `[LOG] print thread id before and after await` |
+| DOC (Docs) | 문서, README, 학습 정리 | `[DOC] document state machine analysis in readme` |
 | RFT (Refactor) | 실험 구조 개선 | `[RFT] simplify task execution code blocks` |
-
 | CMP (Compare) | 동기/비동기 비교 | `[CMP] test execution order of sync vs async` |
-
 | FIX (Fix) | 실험 오류 수정 | `[FIX] resolve crash in async console printing` |
 
 ---
