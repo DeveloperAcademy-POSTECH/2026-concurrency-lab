@@ -4,6 +4,7 @@ import SwiftUI
 
 @MainActor
 final class CancellationExperimentViewModel: ObservableObject {
+    // Keep the experiment intentionally small so the cancellation point is easy to observe.
     let totalSteps = 10
 
     @Published var selectedMode: ExperimentMode = .taskSleep
@@ -14,6 +15,7 @@ final class CancellationExperimentViewModel: ObservableObject {
 
     private var task: Task<Void, Never>?
 
+    // The UI highlights the most recent event while the full timeline remains scrollable.
     var latestLog: ExperimentLog? {
         logs.last
     }
@@ -23,6 +25,7 @@ final class CancellationExperimentViewModel: ObservableObject {
     }
 
     func startTask() {
+        // Cancel any previous run before starting a new experiment.
         task?.cancel()
         currentStep = 0
         logs.removeAll()
@@ -36,10 +39,14 @@ final class CancellationExperimentViewModel: ObservableObject {
 
         switch selectedMode {
         case .taskSleep:
+            // This task stays on the cooperative Swift Concurrency path.
+            // Task.sleep can suspend and throw CancellationError when the task is cancelled.
             task = Task {
                 await runTaskSleep(steps: steps, delay: delay)
             }
         case .threadSleep:
+            // Thread.sleep blocks a thread, so run it off the MainActor to keep the UI responsive.
+            // The callbacks hop back to the MainActor before mutating published UI state.
             task = Task.detached {
                 await Self.runThreadSleep(
                     steps: steps,
@@ -60,6 +67,7 @@ final class CancellationExperimentViewModel: ObservableObject {
 
     func cancelTask() {
         append("User requested cancellation.", kind: .user)
+        // cancel() records a cancellation request. It does not forcefully stop synchronous work.
         task?.cancel()
     }
 
@@ -72,6 +80,7 @@ final class CancellationExperimentViewModel: ObservableObject {
     }
 
     func stepColor(for step: Int) -> Color {
+        // Unfilled cells stay neutral so the filled cells show the observed progress clearly.
         if step > currentStep {
             return Color.secondary.opacity(0.18)
         }
@@ -90,6 +99,7 @@ final class CancellationExperimentViewModel: ObservableObject {
         do {
             for step in 1...steps {
                 append("Task.sleep is waiting before cell \(step).", kind: .task)
+                // This is the cancellation-aware suspension point in the experiment.
                 try await Task.sleep(for: .seconds(delay))
                 currentStep = step
                 append("Task.sleep filled cell \(step).", kind: .task)
@@ -97,6 +107,7 @@ final class CancellationExperimentViewModel: ObservableObject {
 
             finish(.completed, "Task.sleep completed all cells.")
         } catch is CancellationError {
+            // When cancellation is requested during Task.sleep, Swift can resume here with CancellationError.
             append("Task.sleep threw CancellationError at a suspension point.", kind: .cancellation)
             finish(.cancelled, "Task.sleep stopped before filling the remaining cells.")
         } catch {
@@ -104,6 +115,7 @@ final class CancellationExperimentViewModel: ObservableObject {
         }
     }
 
+    // This function is nonisolated because it performs blocking work away from the MainActor.
     nonisolated private static func runThreadSleep(
         steps: Int,
         delay: Double,
@@ -115,6 +127,8 @@ final class CancellationExperimentViewModel: ObservableObject {
 
         for step in 1...steps {
             blockingSleep(for: delay)
+            // Even after cancellation, Thread.sleep does not throw or suspend cooperatively.
+            // The task can observe Task.isCancelled only after the blocking call returns.
             await updateStep(step)
             await log("Thread.sleep filled cell \(step). Task.isCancelled is \(Task.isCancelled).", .task)
         }
@@ -128,16 +142,19 @@ final class CancellationExperimentViewModel: ObservableObject {
     }
 
     nonisolated private static func blockingSleep(for delay: Double) {
+        // This is deliberately synchronous and blocking to contrast with Task.sleep.
         Thread.sleep(forTimeInterval: delay)
     }
 
     private func finish(_ newStatus: ExperimentStatus, _ message: String) {
+        // Finish all runs through one path so status, logs, and task cleanup stay consistent.
         status = newStatus
         append(message, kind: .result)
         task = nil
     }
 
     private func append(_ message: String, kind: ExperimentLog.Kind) {
+        // Each log entry is immutable, which makes the timeline stable for SwiftUI diffing.
         logs.append(ExperimentLog(message: message, kind: kind))
     }
 }

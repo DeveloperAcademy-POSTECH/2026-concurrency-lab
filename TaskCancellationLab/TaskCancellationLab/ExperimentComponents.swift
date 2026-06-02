@@ -113,6 +113,7 @@ struct StepGridView: View {
     let stepColor: (Int) -> Color
 
     var body: some View {
+        // A fixed-size grid makes the cancellation result visible without reading the timeline first.
         HStack(spacing: 6) {
             ForEach(1...totalSteps, id: \.self) { step in
                 RoundedRectangle(cornerRadius: 4)
@@ -178,6 +179,7 @@ struct ExperimentTimelineView: View {
             .onChange(of: logs.count) {
                 guard let lastID = logs.last?.id else { return }
 
+                // Keep the newest event in view while the experiment is running.
                 withAnimation(.easeOut(duration: 0.2)) {
                     proxy.scrollTo(lastID, anchor: .bottom)
                 }
