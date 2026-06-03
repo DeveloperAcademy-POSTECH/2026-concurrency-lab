@@ -4,6 +4,21 @@
 // Verifies the execution flow when entering an async context (Task) 
 // but lacking any 'await' suspension points inside the function.
 
+/*
+ Flow Chart
+ Start: Main Thread
+ -> Console: [Start] Main Thread
+ -> Is the task created with async/await?
+ -> Yes
+ -> async/await Task Created
+ -> Enter Async Function
+ -> Encounter await?
+ -> No
+ -> Execute Synchronously
+ -> Console: [End] Task Finished - Return to Main Thread
+ -> End: Return to Main Thread
+*/
+
 import Foundation
 
 @available(macOS 10.15, *) 
