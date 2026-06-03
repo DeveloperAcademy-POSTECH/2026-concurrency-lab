@@ -23,5 +23,3 @@ func runSynchronousPath() {
 
     print("[End] Task Finished - Return to Main Thread")
 }
-
-runSynchronousPath()
