@@ -17,6 +17,7 @@ struct Main {
         ===============================
         1 - Step 1: Synchronous Path
         2 - Step 2: Async No Await
+        3 - Step 3: Single Suspension
         ===============================
         Select Step:
         """, terminator: " ")

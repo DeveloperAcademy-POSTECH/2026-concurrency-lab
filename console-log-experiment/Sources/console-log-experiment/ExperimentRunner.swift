@@ -8,6 +8,9 @@ func run(step: ExperimentStep) {
 
     case .step2:
         runAsyncNoAwaitPath()
+
+    case .step3:
+        runSuspensionPath()
     }
 }
 
@@ -17,7 +20,9 @@ extension ExperimentStep {
         case .step1:
             return "Step 1 - Synchronous Path Experiment"
         case .step2:
-            return "Step 2 - Async Task Without Await"
+            return "Step 2 - Async Task Without Await Experiment"
+        case .step3:
+            return "Step 3 - Single Suspension Point Execution Experiment"
         }
     }
 }
