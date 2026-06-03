@@ -1,5 +1,7 @@
-// Step1_SyncPath.swift
-// Step 1: Complete synchronous path without async/await
+// step1_sync.swift
+
+// [Step 1 Experiment Function]
+// Complete synchronous path without async/await
 
 /* Flow Chart
 Start: Main Thread
@@ -18,7 +20,7 @@ func runSynchronousPath() {
 
     print("[Start] Main Thread")
 
-    // Enter the "No" path of "Is the task created with async/await?"
+    // Is the task created with async/await? -> No
     print("Execute Synchronously")
 
     print("[End] Task Finished - Return to Main Thread")
