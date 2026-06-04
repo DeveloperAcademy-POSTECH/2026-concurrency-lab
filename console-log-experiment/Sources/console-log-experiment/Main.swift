@@ -12,30 +12,31 @@ struct Main {
         // Prints the title of the concurrency experiment lab
         print("=== SWIFT CONCURRENCY LAB ===")
 
-        // Displays a CLI menu for selecting an experiment step
+        // Displays a CLI menu for selecting an experiment case
         print("""
         ===============================
-        1 - Step 1: Synchronous Path
-        2 - Step 2: Async No Await
-        3 - Step 3: Single Suspension
+        Experiment 1: Synchronous Path
+        Experiment 2: Async No Await
+        Experiment 3: Single Suspension
+        Experiment 4: Multiple Suspension
         ===============================
-        Select Step:
+        Select Experiment case:
         """, terminator: " ")
 
         // Reads user input from the command line
-        // Converts the input string into a valid ExperimentStep enum case
+        // Converts the input string into a valid ExperimentCase enum case
         guard let input = readLine(),
-              let step = ExperimentStep(rawValue: input) else {
+              let experimentCase = ExperimentCase(rawValue: input) else {
             print("Invalid input")
             return
         }
 
-        // Prints which experiment step is currently being executed
-        print("\nRunning: \(step.description)\n")
+        // Prints which experiment case is currently being executed
+        print("\nRunning: \(experimentCase.description)\n")
 
-        // Executes the selected experiment step
+        // Executes the selected experiment case
         // This acts as a dispatcher that routes execution to the correct function
-        run(step: step)
+        run(exp: experimentCase)
 
         // Keeps the program alive for 2 seconds to allow asynchronous tasks
         // (e.g., Task { }) to complete their console output before program exits

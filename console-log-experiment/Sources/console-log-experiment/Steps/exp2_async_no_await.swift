@@ -1,6 +1,6 @@
-// step2_async_no_await.swift
+// exp2_async_no_await.swift
 
-// [Step 2 Experiment Function]
+// [Experiment 2: Async No Await]
 // Verifies the execution flow when entering an async context (Task) 
 // but lacking any 'await' suspension points inside the function.
 
@@ -34,7 +34,7 @@ func asyncFunctionWithoutAwait() async {
     print("Execute task Synchronously")
 }
 
-/// Triggers and drives the Step 2 experiment path.
+/// Triggers and drives the case 2 experiment path.
 @available(macOS 10.15, *) 
 func runAsyncNoAwaitPath() {
     // Flow Chart: Is the task created with async/await? -> Yes

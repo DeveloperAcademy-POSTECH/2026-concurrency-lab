@@ -1,28 +1,34 @@
 import Foundation
 
 @available(macOS 10.15, *) 
-func run(step: ExperimentStep) {
-    switch step {
-    case .step1:
+func run(exp: ExperimentCase) {
+    switch exp {
+    case .exp1:
         runSynchronousPath()
 
-    case .step2:
+    case .exp2:
         runAsyncNoAwaitPath()
 
-    case .step3:
-        runSuspensionPath()
+    case .exp3:
+        runSingleSuspensionPath()
+
+    case .exp4:
+        runMultipleSuspensionPath()
     }
+
 }
 
-extension ExperimentStep {
+extension ExperimentCase {
     var description: String {
         switch self {
-        case .step1:
-            return "Step 1 - Synchronous Path Experiment"
-        case .step2:
-            return "Step 2 - Async Task Without Await Experiment"
-        case .step3:
-            return "Step 3 - Single Suspension Point Execution Experiment"
+        case .exp1:
+            return "[Experiment 1] Synchronous Path"
+        case .exp2:
+            return "[Experiment 2] Async Task Without Await"
+        case .exp3:
+            return "[Experiment 3] Single Suspension Point Execution"
+        case .exp4:
+            return "[Experiment 4] Multiple Suspension Point Execution"
         }
     }
 }

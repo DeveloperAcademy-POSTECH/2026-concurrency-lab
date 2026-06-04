@@ -1,6 +1,6 @@
-// step1_sync.swift
+// case1_sync.swift
 
-// [Step 1 Experiment Function]
+// [Experiment 1: Synchronous Path]
 // Complete synchronous path without async/await
 
 /* Flow Chart
