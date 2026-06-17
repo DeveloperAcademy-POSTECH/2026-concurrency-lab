@@ -9,18 +9,18 @@ enum ExperimentMode: String, CaseIterable, Identifiable {
     var question: String {
         switch self {
         case .taskSleep:
-            "Where does a task stop when it is cancelled during `Task.sleep`?"
+            "What happens to the next cell after you press Cancel?"
         case .threadSleep:
-            "Does a task stop immediately when it is cancelled during blocking `Thread.sleep`?"
+            "Do the cells stop filling after you press Cancel?"
         }
     }
 
-    var takeaway: String {
+    var watchInstruction: String {
         switch self {
         case .taskSleep:
-            "`Task.sleep` is a cancellation-aware suspension point, so a cancelled task can exit with `CancellationError`."
+            "Cancel while `Task.sleep` is waiting. The next cell should stop before it fills."
         case .threadSleep:
-            "`Thread.sleep` is not a Swift Concurrency suspension point, so it does not automatically handle task cancellation."
+            "Cancel while `Thread.sleep` is running. Cells may keep filling after cancellation is requested."
         }
     }
 

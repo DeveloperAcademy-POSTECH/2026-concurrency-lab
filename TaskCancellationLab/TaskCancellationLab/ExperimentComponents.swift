@@ -5,69 +5,73 @@ struct ExperimentExplanationView: View {
     let status: ExperimentStatus
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             Label(status.rawValue, systemImage: status.iconName)
                 .font(.headline)
                 .foregroundStyle(status.color)
 
-            Text(mode.question)
-                .font(.subheadline.weight(.semibold))
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Question")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
-            Text(mode.takeaway)
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                Text(mode.question)
+                    .font(.subheadline.weight(.semibold))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Watch")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                Text(mode.watchInstruction)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(.thinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .layoutPriority(1)
     }
 }
 
 struct ExperimentControlsView: View {
     let status: ExperimentStatus
-    @Binding var delaySeconds: Double
     let start: () -> Void
     let cancel: () -> Void
     let reset: () -> Void
 
     var body: some View {
-        VStack(spacing: 14) {
-            HStack {
-                Button {
-                    start()
-                } label: {
-                    Label("Start", systemImage: "play.fill")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(status == .running)
-
-                Button {
-                    cancel()
-                } label: {
-                    Label("Cancel", systemImage: "xmark")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
-                .disabled(status != .running)
-
-                Button {
-                    reset()
-                } label: {
-                    Label("Reset", systemImage: "arrow.clockwise")
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
+        HStack {
+            Button {
+                start()
+            } label: {
+                Label("Start", systemImage: "play.fill")
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.borderedProminent)
+            .disabled(status == .running)
 
-            HStack {
-                Text("Delay")
-                Slider(value: $delaySeconds, in: 0.2...1.6, step: 0.2)
-                Text("\(delaySeconds, specifier: "%.1f")s")
-                    .monospacedDigit()
-                    .frame(width: 42, alignment: .trailing)
+            Button {
+                cancel()
+            } label: {
+                Label("Cancel", systemImage: "xmark")
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.bordered)
+            .disabled(status != .running)
+
+            Button {
+                reset()
+            } label: {
+                Label("Reset", systemImage: "arrow.clockwise")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
         }
     }
 }

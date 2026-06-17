@@ -13,7 +13,6 @@ struct CancellationExperimentView: View {
                 )
                 ExperimentControlsView(
                     status: viewModel.status,
-                    delaySeconds: $viewModel.delaySeconds,
                     start: viewModel.startTask,
                     cancel: viewModel.cancelTask,
                     reset: viewModel.reset

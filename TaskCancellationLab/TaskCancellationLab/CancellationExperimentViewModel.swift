@@ -11,9 +11,9 @@ final class CancellationExperimentViewModel: ObservableObject {
     @Published var status: ExperimentStatus = .idle
     @Published var currentStep = 0
     @Published var logs: [ExperimentLog] = []
-    @Published var delaySeconds = 0.8
 
     private var task: Task<Void, Never>?
+    private let delaySeconds = 1.2
 
     // The UI highlights the most recent event while the full timeline remains scrollable.
     var latestLog: ExperimentLog? {
@@ -98,17 +98,17 @@ final class CancellationExperimentViewModel: ObservableObject {
     private func runTaskSleep(steps: Int, delay: Double) async {
         do {
             for step in 1...steps {
-                append("Task.sleep is waiting before cell \(step).", kind: .task)
+                append("Task.sleep is waiting before cell \(step). Task.isCancelled is \(Task.isCancelled).", kind: .task)
                 // This is the cancellation-aware suspension point in the experiment.
                 try await Task.sleep(for: .seconds(delay))
                 currentStep = step
-                append("Task.sleep filled cell \(step).", kind: .task)
+                append("Task.sleep filled cell \(step). Task.isCancelled is \(Task.isCancelled).", kind: .task)
             }
 
             finish(.completed, "Task.sleep completed all cells.")
         } catch is CancellationError {
             // When cancellation is requested during Task.sleep, Swift can resume here with CancellationError.
-            append("Task.sleep threw CancellationError at a suspension point.", kind: .cancellation)
+            append("Task.sleep threw CancellationError at a suspension point. Task.isCancelled is \(Task.isCancelled).", kind: .cancellation)
             finish(.cancelled, "Task.sleep stopped before filling the remaining cells.")
         } catch {
             finish(.cancelled, "Task.sleep stopped with error: \(error.localizedDescription)")
@@ -126,6 +126,7 @@ final class CancellationExperimentViewModel: ObservableObject {
         await log("Thread.sleep starts blocking work.", .task)
 
         for step in 1...steps {
+            await log("Thread.sleep is blocking before cell \(step). Task.isCancelled is \(Task.isCancelled).", .task)
             blockingSleep(for: delay)
             // Even after cancellation, Thread.sleep does not throw or suspend cooperatively.
             // The task can observe Task.isCancelled only after the blocking call returns.
