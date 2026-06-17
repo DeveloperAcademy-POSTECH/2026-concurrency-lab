@@ -37,6 +37,8 @@ func asyncFunctionWithoutAwait() async {
 /// Triggers and drives the case 2 experiment path.
 @available(macOS 10.15, *) 
 func runAsyncNoAwaitPath() {
+    print("[Start] Main Thread")
+
     // Flow Chart: Is the task created with async/await? -> Yes
     // Note: Task is not executed immediately; it is scheduled by Swift Concurrency runtime.
     Task {
