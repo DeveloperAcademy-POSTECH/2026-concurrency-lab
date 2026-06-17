@@ -55,7 +55,13 @@ The two APIs have similar names, so they may look like the same kind of waiting.
 
 This difference matters in Swift Concurrency code.
 
-## 6. Cancellation needs to be designed
+## 6. Blocking work should stay away from the MainActor
+
+The app runs the `Thread.sleep` experiment in `Task.detached` because `Thread.sleep` blocks the current thread. If blocking work runs on the MainActor, the SwiftUI interface can become unresponsive, which makes it hard to press `Cancel` and observe the experiment.
+
+Using `Task.detached` does not make `Thread.sleep` cancellation-aware. It only separates the blocking work from the UI actor. The important behavior remains the same: cancellation can be requested, but `Thread.sleep` does not automatically stop just because the task is cancelled.
+
+## 7. Cancellation needs to be designed
 
 Pressing a cancel button is not enough. We also need to look at where the running code can stop, which APIs are cancellation-aware, and whether the code is using blocking calls.
 

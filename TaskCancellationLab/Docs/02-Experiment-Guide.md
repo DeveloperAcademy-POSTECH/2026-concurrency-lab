@@ -18,6 +18,8 @@ try await Task.sleep(for: .seconds(1))
 
 In contrast, a synchronous function like `Thread.sleep` blocks the current thread and is not a Swift Concurrency suspension point.
 
+In this SwiftUI app, the `Thread.sleep` experiment runs inside `Task.detached`. This keeps the blocking work away from the MainActor so the UI can stay responsive while the experiment is running. The observed cancellation behavior is still about `Thread.sleep`: cancellation can be requested, but the blocking call does not automatically stop at that point.
+
 The basic flow of the app is simple.
 
 1. Select the `Task.sleep` or `Thread.sleep` tab.
@@ -62,6 +64,8 @@ Does a task stop immediately when it is cancelled during a blocking sleep such a
 ### Observation points
 
 `Thread.sleep` is not an async suspension point. It only blocks the current thread and does not automatically handle Swift task cancellation.
+
+The app runs this blocking work in a detached task so pressing `Cancel` remains possible from the SwiftUI interface. UI updates are sent back to the MainActor after each blocking sleep finishes.
 
 ### Expected result
 
