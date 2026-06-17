@@ -49,9 +49,9 @@ When you press `Start`, the 10 cells fill in order. If you press `Cancel` in the
 In the log, you can expect to see a flow similar to this.
 
 ```text
-Task.sleep is waiting before cell 3.
+Task.sleep is waiting before cell 3. Task.isCancelled is false.
 User requested cancellation.
-Task.sleep threw CancellationError at a suspension point.
+Task.sleep threw CancellationError at a suspension point. Task.isCancelled is true.
 Task.sleep stopped before filling the remaining cells.
 ```
 
@@ -79,7 +79,9 @@ In the log, you can expect to see a flow similar to this.
 
 ```text
 User requested cancellation.
+Thread.sleep is blocking before cell 4. Task.isCancelled is true.
 Thread.sleep filled cell 4. Task.isCancelled is true.
+Thread.sleep is blocking before cell 5. Task.isCancelled is true.
 Thread.sleep filled cell 5. Task.isCancelled is true.
 Cancellation was requested, but Thread.sleep did not stop the loop early.
 ```
@@ -100,6 +102,6 @@ Then run the `Thread.sleep` tab and press cancel at a similar time. Check whethe
 
 This difference is the starting point for understanding cooperative cancellation.
 
-## Adjusting the delay
+## Timing
 
-Increasing the `Delay` value makes the cancellation timing easier to observe. If the experiment finishes too quickly, try increasing it to `1.0s` or more.
+The experiment uses a fixed delay of `1.2s` between cells. This keeps the interaction simple and gives enough time to press `Cancel` while a cell is waiting or blocking.
