@@ -38,8 +38,8 @@ struct Main {
         // This acts as a dispatcher that routes execution to the correct function
         run(exp: experimentCase)
 
-        // Keeps the program alive for 2 seconds to allow asynchronous tasks
+        // Keeps the program alive for 4 seconds to allow asynchronous tasks
         // (e.g., Task { }) to complete their console output before program exits
-        try? await Task.sleep(nanoseconds: 2_000_000_000)
+        try? await Task.sleep(nanoseconds: 4_000_000_000)
     }
 }
