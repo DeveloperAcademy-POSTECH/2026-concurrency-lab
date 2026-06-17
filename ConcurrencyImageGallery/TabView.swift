@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-struct ContentView: View {
+struct RootTabView: View {
     var body: some View {
         TabView {
             Tab("Sequential", systemImage: "arrow.down") {
@@ -30,5 +30,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    RootTabView()
 }

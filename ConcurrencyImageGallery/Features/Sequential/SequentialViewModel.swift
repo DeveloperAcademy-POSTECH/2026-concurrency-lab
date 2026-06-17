@@ -28,9 +28,10 @@ final class SequentialViewModel {
         progress = "0 / \(limit)"
         elapsedSeconds = 0
 
-        let start = Date()
+        let clock = ContinuousClock()
+        let start = clock.now
         defer {
-            elapsedSeconds = Date().timeIntervalSince(start)
+            elapsedSeconds = seconds(from: start.duration(to: clock.now))
             isLoading = false
         }
 
@@ -40,10 +41,15 @@ final class SequentialViewModel {
                 let data = try await service.fetchImageData(from: item.downloadURL)
                 images.append(LoadedImage(image: item, data: data))
                 progress = "\(index + 1) / \(limit)"
-                elapsedSeconds = Date().timeIntervalSince(start)
+                elapsedSeconds = seconds(from: start.duration(to: clock.now))
             }
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func seconds(from duration: Duration) -> Double {
+        let components = duration.components
+        return Double(components.seconds) + (Double(components.attoseconds) / 1_000_000_000_000_000_000)
     }
 }
