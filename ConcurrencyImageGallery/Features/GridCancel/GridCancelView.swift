@@ -65,7 +65,7 @@ struct GridCancelCell: View {
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .task(id: image.id) {
-            // Small delay makes cancellation observable while scrolling.
+            
             do {
                 try await Task.sleep(for: .milliseconds(200))
                 try Task.checkCancellation()
