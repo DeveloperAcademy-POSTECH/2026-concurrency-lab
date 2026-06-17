@@ -134,6 +134,7 @@ Enter one of the following values and press Enter:
 | 2 | Async Task Without Await |
 | 3 | Single Suspension Point |
 | 4 | Multiple Suspension Points |
+
 The selected experiment will execute and print its execution flow to the console
 
 ### Prerequisites
