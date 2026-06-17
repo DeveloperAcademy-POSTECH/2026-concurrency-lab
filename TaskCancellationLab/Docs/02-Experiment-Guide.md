@@ -20,6 +20,8 @@ In contrast, a synchronous function like `Thread.sleep` blocks the current threa
 
 In this SwiftUI app, the `Thread.sleep` experiment runs inside `Task.detached`. This keeps the blocking work away from the MainActor so the UI can stay responsive while the experiment is running. The observed cancellation behavior is still about `Thread.sleep`: cancellation can be requested, but the blocking call does not automatically stop at that point.
 
+The comparison is not between `Task` and `Task.detached`. It is between a cancellation-aware suspension point (`Task.sleep`) and a synchronous blocking call (`Thread.sleep`).
+
 The basic flow of the app is simple.
 
 1. Select the `Task.sleep` or `Thread.sleep` tab.
@@ -37,6 +39,8 @@ Where does a task stop when it is cancelled during `Task.sleep`?
 ### Observation points
 
 `Task.sleep` is a cancellation-aware suspension point. If a task is cancelled while sleeping, `Task.sleep` can throw `CancellationError` and prevent the task from continuing to the remaining work. The important point is that the cancel button does not physically cut off the task. Instead, the async point created by `Task.sleep` cooperates with the cancellation request.
+
+In this experiment, the app waits before filling each cell. The cell is filled only after `Task.sleep` returns successfully. If cancellation is requested while the task is sleeping, `Task.sleep` throws `CancellationError`, so the code that updates the current step is skipped. That is why the next cell may never be filled.
 
 ### Expected result
 
@@ -85,6 +89,8 @@ Cancellation was requested, but Thread.sleep did not stop the loop early.
 While `Thread.sleep` is running, the task's cancelled state can become `true`. However, the blocking sleep does not throw that state or stop the loop for you.
 
 In other words, the cancellation request reached the task, but the running code did not provide an async cooperation point where that request could be handled.
+
+The loop intentionally does not stop when `Task.isCancelled` becomes `true`. This makes the experiment show that `Thread.sleep` itself does not stop the loop. A developer could choose to check `Task.isCancelled` and break manually, but that would be explicit cooperative cancellation logic written by the developer.
 
 ## How to compare the two experiments
 
