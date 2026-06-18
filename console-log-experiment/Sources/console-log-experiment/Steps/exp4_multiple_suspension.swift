@@ -12,35 +12,36 @@
  -> Console: [Start] Main Thread
  -> Is the task created with async/await?
  -> Yes
- -> async/await Task Created
- -> Enter Async Function
+ -> async/await Task Created -> Console: async/await Task Created
+ -> Enter Async Function -> Console: Enter Async Function
  -> Encounter await?
- -> Yes
+ -> Yes -> Console: Encounter await
+ -> Console: Suspending Task
  -> Suspend Task
  -> Yield control to runtime
  -> Console: Task Suspended
  -> Execute Other Work
  -> Perform Other Work
  -> Console: Other Tasks Running
- -> Async Operation Completed
+ -> Async Operation Completed -> Console: Async Operation Completed
  -> Resume Task
  -> Console: Task Resumed
- -> Continue After await
+ -> Continue After await -> Console: Continue After await
  -> More await Points?
  -> Yes
 
  [Repeat Suspension / Resume Cycle]
 
- -> Suspend Task
+-> Suspend Task
  -> Yield control to runtime
  -> Console: Task Suspended
  -> Execute Other Work
  -> Perform Other Work
  -> Console: Other Tasks Running
- -> Async Operation Completed
+ -> Async Operation Completed -> Console: Async Operation Completed
  -> Resume Task
  -> Console: Task Resumed
- -> Continue After await
+ -> Continue After await -> Console: Continue After await
  -> More await Points?
  -> No
 
@@ -64,7 +65,7 @@ func asyncFunctionWithMultipleAwait() async {
 
     // ===== Suspension Point #1 =====
     // Flow Chart: Encounter await? -> Yes -> Suspend Task -> Yield control to runtime
-    print("Task Suspended")
+    print("Suspending Task")
 
     // Actual suspension point
     try? await Task.sleep(for: .seconds(1))
@@ -81,7 +82,7 @@ func asyncFunctionWithMultipleAwait() async {
     // ===== Suspension Point #2 =====
 
     // Flow Chart: Suspend Task -> Yield control to runtime
-    print("Task Suspended")
+    print("Suspending Task")
 
     // Actual suspension point
     try? await Task.sleep(for: .seconds(1))
@@ -101,28 +102,26 @@ func asyncFunctionWithMultipleAwait() async {
 func runMultipleSuspensionPath() {
 
     // Flow Chart: Main thread starts execution
-    print("Console: [Start] Main Thread")
+    print("[Start] Main Thread")
 
     // Simulated concurrent work executed while the primary Task is suspended
-
-    
     Task {
         for index in 1...8 {
             try? await Task.sleep(for: .seconds(3))
 
-            print("Console: Other Tasks Running (\(index))")
+            print("Other Tasks Running (\(index))")
         }
     }
 
     Task {
 
         // Flow Chart: Async task is created and scheduled by runtime
-        print("Console: async/await Task Created")
+        print("async/await Task Created")
 
         // Execute async function containing multiple suspension points
         await asyncFunctionWithMultipleAwait()
 
         // Flow Chart: Final completion of async task execution
-        print("Console: [End] Task Finished - Return to Main Thread")
+        print("[End] Task Finished - Return to Main Thread")
     }
 }

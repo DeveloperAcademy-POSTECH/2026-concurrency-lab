@@ -17,17 +17,17 @@
  -> Console: [Start] Main Thread
  -> Is the task created with async/await?
  -> Yes
- -> async/await Task Created
- -> Enter Async Function
+ -> async/await Task Created -> Console: async/await Task Created
+ -> Enter Async Function -> Console: Enter Async Function
  -> Encounter await?
- -> Yes
+ -> Yes -> Console: Encounter await
+ -> Console: Suspending Task
  -> Suspend Task
  -> Yield control to runtime
- -> Console: Task Suspended
  -> Execute Other Work
  -> Perform Other Work
  -> Console: Other Tasks Running
- -> Async Operation Completed
+ -> Async Operation Completed -> Console: Async Operation Completed
  -> Resume Task
  -> Console: Task Resumed
  -> Continue After await
@@ -42,7 +42,6 @@ import Foundation
 
 @available(macOS 13, *)
 
-
 // Note:
 // This async function contains exactly one suspension point (Task.sleep),
 // which causes the function to suspend and later resume from the same continuation point.
@@ -54,10 +53,10 @@ func asyncFunctionWithSingleSuspension() async {
     // Flow Chart: Encounter await? -> Yes
     print("Encounter await")
 
-    // Flow Chart: Suspend Task -> Yield control to runtime
-    print("Task Suspended")
+    // Flow Chart: Console: Suspending Task
+    print("Suspending Task")
 
-    // Actual suspension point
+    // Flow Chart: Suspended Task (Actual suspension point) -> Yield control to runtime
     try? await Task.sleep(for: .seconds(1))
 
     // Flow Chart: Async Operation Completed
@@ -88,7 +87,7 @@ func runSingleSuspensionPath() {
     }
 
     // Flow Chart: Execute Other Work -> Perform Other Work
-    for _ in 1...3 {
-        print("Other Tasks Running")
+    for index: Int in 1...3 {
+        print("Other Tasks Running (\(index))")
     }
 }
