@@ -40,6 +40,6 @@ struct Main {
 
         // Keeps the program alive for 4 seconds to allow asynchronous tasks
         // (e.g., Task { }) to complete their console output before program exits
-        try? await Task.sleep(for: .seconds(1))
+        try? await Task.sleep(for: .seconds(4))
     }
 }

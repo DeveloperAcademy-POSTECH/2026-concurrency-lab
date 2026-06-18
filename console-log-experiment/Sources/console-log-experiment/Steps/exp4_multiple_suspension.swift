@@ -106,8 +106,8 @@ func runMultipleSuspensionPath() {
 
     // Simulated concurrent work executed while the primary Task is suspended
     Task {
-        for index in 1...8 {
-            try? await Task.sleep(for: .seconds(3))
+        for index in 1...6 {
+            try? await Task.sleep(for: .seconds(0.3))
 
             print("Other Tasks Running (\(index))")
         }
