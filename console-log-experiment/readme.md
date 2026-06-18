@@ -141,7 +141,7 @@ The selected experiment will execute and print its execution flow to the console
 This project requires:
 - Swift 5.5 or later
 - Swift Package Manager (included with Swift)
-- macOS 10.15 or later
+- macOS 13 or later
 
 Verify your Swift installation:
 ```

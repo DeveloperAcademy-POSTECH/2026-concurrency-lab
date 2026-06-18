@@ -40,7 +40,7 @@
 
 import Foundation
 
-@available(macOS 10.15, *)
+@available(macOS 13, *)
 
 
 // Note:
@@ -58,7 +58,7 @@ func asyncFunctionWithSingleSuspension() async {
     print("Task Suspended")
 
     // Actual suspension point
-    try? await Task.sleep(nanoseconds: 1_000_000_000)
+    try? await Task.sleep(for: .seconds(1))
 
     // Flow Chart: Async Operation Completed
     print("Async Operation Completed")
@@ -70,7 +70,7 @@ func asyncFunctionWithSingleSuspension() async {
     print("Continue After await")
 }
 
-@available(macOS 10.15, *)
+@available(macOS 13, *)
 func runSingleSuspensionPath() {
 
     // Flow Chart: Start: Main Thread

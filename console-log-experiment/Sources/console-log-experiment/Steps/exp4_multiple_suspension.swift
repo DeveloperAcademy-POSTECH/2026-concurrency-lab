@@ -51,11 +51,12 @@
 
 import Foundation
 
-@available(macOS 10.15, *)
+@available(macOS 13, *)
 
 // Note:
 // This async function contains multiple suspension points (Task.sleep),
 // causing the Task to suspend and resume multiple times before completion.
+
 func asyncFunctionWithMultipleAwait() async {
 
     // Flow Chart: Enter Async Function
@@ -66,7 +67,7 @@ func asyncFunctionWithMultipleAwait() async {
     print("Task Suspended")
 
     // Actual suspension point
-    try? await Task.sleep(nanoseconds: 1_000_000_000)
+    try? await Task.sleep(for: .seconds(1))
 
     // Flow Chart: Async Operation Completed -> Resume Task
     print("Task Resumed")
@@ -83,7 +84,7 @@ func asyncFunctionWithMultipleAwait() async {
     print("Task Suspended")
 
     // Actual suspension point
-    try? await Task.sleep(nanoseconds: 1_000_000_000)
+    try? await Task.sleep(for: .seconds(1))
 
     // Flow Chart: Async Operation Completed -> Resume Task
     print("Task Resumed")
@@ -96,16 +97,18 @@ func asyncFunctionWithMultipleAwait() async {
 }
 
 // Triggers and executes case 4 multiple suspension experiment flow.
-@available(macOS 10.15, *)
+@available(macOS 13, *)
 func runMultipleSuspensionPath() {
 
     // Flow Chart: Main thread starts execution
     print("Console: [Start] Main Thread")
 
     // Simulated concurrent work executed while the primary Task is suspended
+
+    
     Task {
         for index in 1...8 {
-            try? await Task.sleep(nanoseconds: 300_000_000)
+            try? await Task.sleep(for: .seconds(3))
 
             print("Console: Other Tasks Running (\(index))")
         }
