@@ -8,15 +8,25 @@
 import Foundation
 import CoreBluetooth
 
+enum PeripheralBLEEvent {
+    case bluetoothStateChanged(String, log: String)
+    case advertisingChanged(Bool, log: String)
+    case log(String)
+    case answerReceived(centralID: UUID, isGood: Bool)
+}
+
 final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
 
     private var peripheralManager: CBPeripheralManager?
     private var answerCharacteristic: CBMutableCharacteristic?
 
-    private let model: PeripheralBLEModel
+    private var continuation: AsyncStream<PeripheralBLEEvent>.Continuation?
 
-    init(model: PeripheralBLEModel) {
-        self.model = model
+    lazy var events = AsyncStream<PeripheralBLEEvent> { continuation in
+        self.continuation = continuation
+    }
+
+    override init() {
         super.init()
 
         self.peripheralManager = CBPeripheralManager(
@@ -24,40 +34,72 @@ final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
             queue: nil
         )
     }
-    
-    //MARK: - 블루투스 상태 관리
+
+    // MARK: - 블루투스 상태 관리
 
     func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
         switch peripheral.state {
         case .poweredOn:
-            model.bluetoothStateText = "Powered On"
-            model.addLog("블루투스가 활성화")
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Powered On",
+                    log: "블루투스가 활성화"
+                )
+            )
+
             setupService()
             startAdvertising()
 
         case .poweredOff:
-            model.bluetoothStateText = "Powered Off"
-            model.addLog("블루투스가 비활성화")
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Powered Off",
+                    log: "블루투스가 비활성화"
+                )
+            )
 
         case .unauthorized:
-            model.bluetoothStateText = "Unauthorized"
-            model.addLog("블루투스 권한 없음")
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Unauthorized",
+                    log: "블루투스 권한 없음"
+                )
+            )
 
         case .unsupported:
-            model.bluetoothStateText = "Unsupported"
-            model.addLog("이 기기는 블루투스를 지원하지 않음")
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Unsupported",
+                    log: "이 기기는 블루투스를 지원하지 않음"
+                )
+            )
 
         case .resetting:
-            model.bluetoothStateText = "Resetting"
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Resetting",
+                    log: "블루투스 상태 재설정 중"
+                )
+            )
 
         case .unknown:
-            model.bluetoothStateText = "Unknown"
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Unknown",
+                    log: "블루투스 상태 알 수 없음"
+                )
+            )
 
         @unknown default:
-            model.bluetoothStateText = "Unknown Default"
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Unknown Default",
+                    log: "알 수 없는 블루투스 상태"
+                )
+            )
         }
     }
-    
+
     // MARK: - 서비스 설정
 
     private func setupService() {
@@ -82,9 +124,9 @@ final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
         peripheralManager.removeAllServices()
         peripheralManager.add(service)
 
-        model.addLog("Service added")
+        continuation?.yield(.log("Service added"))
     }
-    
+
     // MARK: - Advertising 관리
 
     func startAdvertising() {
@@ -95,14 +137,23 @@ final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
             CBAdvertisementDataLocalNameKey: "Answer-iPhone"
         ])
 
-        model.isAdvertising = true
-        model.addLog("Advertising started")
+        continuation?.yield(
+            .advertisingChanged(
+                true,
+                log: "Advertising started"
+            )
+        )
     }
 
     func stopAdvertising() {
         peripheralManager?.stopAdvertising()
-        model.isAdvertising = false
-        model.addLog("Advertising stopped")
+
+        continuation?.yield(
+            .advertisingChanged(
+                false,
+                log: "Advertising stopped"
+            )
+        )
     }
 
     func peripheralManagerDidStartAdvertising(
@@ -110,14 +161,18 @@ final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
         error: Error?
     ) {
         if let error {
-            model.addLog("Advertising error: \(error.localizedDescription)")
+            continuation?.yield(
+                .log("Advertising error: \(error.localizedDescription)")
+            )
         } else {
-            model.addLog("Advertising success")
+            continuation?.yield(
+                .log("Advertising success")
+            )
         }
     }
 
     // MARK: - 데이터 수신
-    
+
     func peripheralManager(
         _ peripheral: CBPeripheralManager,
         didReceiveWrite requests: [CBATTRequest]
@@ -136,9 +191,12 @@ final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
             let isGood = firstByte == BLEAnswer.good.rawValue
             let centralID = request.central.identifier
 
-            DispatchQueue.main.async {
-                self.model.receiveAnswer(from: centralID, value: isGood)
-            }
+            continuation?.yield(
+                .answerReceived(
+                    centralID: centralID,
+                    isGood: isGood
+                )
+            )
 
             peripheral.respond(to: request, withResult: .success)
         }
