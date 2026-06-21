@@ -17,6 +17,10 @@ enum CentralBLEEvent {
 }
 
 final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
+    
+    private let bleQueue = DispatchQueue(
+        label: "com.juni.corebluetooth.central-serial-queue"
+    )
 
     private var centralManager: CBCentralManager?
     private var targetPeripheral: CBPeripheral?
@@ -36,7 +40,7 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
 
         self.centralManager = CBCentralManager(
             delegate: self,
-            queue: nil
+            queue: bleQueue
         )
     }
 
