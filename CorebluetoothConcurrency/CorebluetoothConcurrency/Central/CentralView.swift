@@ -98,25 +98,27 @@ struct CentralView: View {
         .padding()
         .task {
             for await event in manager.events {
-                switch event {
-                case .bluetoothStateChanged(let state, let log):
-                    model.status = state
-                    model.addLog(log)
-
-                case .discovered(let item, let log):
-                    model.discovered.append(item)
-                    model.addLog(log)
-
-                case .discoveredCleared(let log):
-                    model.discovered.removeAll()
-                    model.addLog(log)
-
-                case .statusChanged(let status, let log):
-                    model.status = status
-                    model.addLog(log)
-
-                case .log(let message):
-                    model.addLog(message)
+                await MainActor.run {
+                    switch event {
+                    case .bluetoothStateChanged(let state, let log):
+                        model.status = state
+                        model.addLog(log)
+                        
+                    case .discovered(let item, let log):
+                        model.discovered.append(item)
+                        model.addLog(log)
+                        
+                    case .discoveredCleared(let log):
+                        model.discovered.removeAll()
+                        model.addLog(log)
+                        
+                    case .statusChanged(let status, let log):
+                        model.status = status
+                        model.addLog(log)
+                        
+                    case .log(let message):
+                        model.addLog(message)
+                    }
                 }
             }
         }
