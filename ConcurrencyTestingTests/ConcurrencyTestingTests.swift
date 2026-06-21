@@ -9,9 +9,27 @@ import Foundation
 import Testing
 @testable import ConcurrencyTesting
 
+@MainActor
 struct ConcurrencyTestingTests {
     @Test
-    func makePhotoItems_createsExpectedCount() {
-        let service = ImageService()
+    func sequentialLoadPhotos_addsFivePhotos() async {
+        let service = ImageService { request in
+            let response = HTTPURLResponse(
+                url: try #require(request.url),
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+
+            return (Data([1, 2, 3]), response)
+        }
+
+        let viewModel = SequentialViewModel(imageService: service)
+
+        await viewModel.loadPhotos()
+
+        #expect(viewModel.photos.count == 5)
+        #expect(viewModel.isLoading == false)
+        #expect(viewModel.errorMessage == nil)
     }
 }
