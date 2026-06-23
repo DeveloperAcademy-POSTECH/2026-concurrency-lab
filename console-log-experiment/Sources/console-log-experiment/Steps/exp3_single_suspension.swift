@@ -87,7 +87,9 @@ func runSingleSuspensionPath() {
     }
 
     // Flow Chart: Execute Other Work -> Perform Other Work
-    for index: Int in 1...3 {
-        print("Other Tasks Running (\(index))")
+    Task {
+        for index: Int in 1...3 {
+            print("Other Tasks Running (\(index))")
+        }
     }
 }
