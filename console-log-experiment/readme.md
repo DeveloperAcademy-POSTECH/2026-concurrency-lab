@@ -139,19 +139,19 @@ The selected experiment will execute and print its execution flow to the console
 
 ### Execution Screenshots
 #### Experiment Selection Menu
-![Experiment Selection Menu](url)
+![Experiment Selection Menu](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-selection-menu.png)
 
 #### Experiment 1: Synchronous Path
-![Experiment 3 Output](url)
+![Experiment 1 Output](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-1.png)
 
 #### Experiment 2: Async No Await
-![Experiment 4 Output](url)
+![Experiment 2 Output](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-2.png)
 
 #### Experiment 3: Single Suspension
-![Experiment 3 Output](url)
+![Experiment 3 Output](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-3.png)
 
 #### Experiment 4: Multiple Suspension
-![Experiment 4 Output](url)
+![Experiment 4 Output](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-4.png)
 
 
 
