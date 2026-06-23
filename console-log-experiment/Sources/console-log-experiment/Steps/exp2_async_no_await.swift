@@ -7,15 +7,15 @@
 /*
  Flow Chart
  Start: Main Thread
- -> Console: [Start] Main Thread
+ -> Console: [Task#00] Start: Main Thread
  -> Is the task created with async/await?
  -> Yes
- -> async/await Task Created
- -> Enter Async Function
+ -> [Task#00] async/await Task Created
+ -> [Task#00] Enter Async Function
  -> Encounter await?
  -> No
- -> Execute Synchronously
- -> Console: [End] Task Finished - Return to Main Thread
+ -> [Task#00] Execute task Synchronously
+ -> Console: [Task#00] End: Return to Main Thread
  -> End: Return to Main Thread
 */
 
@@ -27,26 +27,26 @@ import Foundation
 func asyncFunctionWithoutAwait() async {
 
     // Flow Chart: Enter Async Function
-    print("Enter Async Function")
+    print("[Task#00] Enter Async Function")
     
     // Flow Chart: Encounter await? -> No -> Execute task Synchronously
-    print("Execute task Synchronously")
+    print("[Task#00] Execute task Synchronously")
 }
 
 /// Triggers and drives the case 2 experiment path.
 func runAsyncNoAwaitPath() {
-    print("[Start] Main Thread")
+    print("[Task#00] Start: Main Thread")
 
     // Flow Chart: Is the task created with async/await? -> Yes
     // Note: Task is not executed immediately; it is scheduled by Swift Concurrency runtime.
     Task {
         // Flow Chart: async/await Task Created
-        print("async/await Task Created")
+        print("[Task#00] async/await Task Created")
         
         // Invoke the asynchronous function
         await asyncFunctionWithoutAwait()
         
         // Flow Chart: End: Return to Main / Final Completion log matching
-        print("[End] Task Finished - Return to Main Thread")
+        print("[Task#00] End: Return to Main Thread")
     }
 }

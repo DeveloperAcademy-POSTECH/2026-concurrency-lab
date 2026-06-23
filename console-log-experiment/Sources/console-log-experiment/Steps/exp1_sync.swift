@@ -18,10 +18,10 @@ import Foundation
 
 func runSynchronousPath() {
 
-    print("[Start] Main Thread")
+    print("[Task#00] Start: Main Thread")
 
     // Is the task created with async/await? -> No
-    print("Execute Synchronously")
+    print("[Task#00] Execute Synchronously")
 
-    print("[End] Task Finished - Return to Main Thread")
+    print("[Task#00] Task Finished - Return to Main Thread")
 }

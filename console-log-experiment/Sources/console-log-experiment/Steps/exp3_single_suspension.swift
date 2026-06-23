@@ -13,29 +13,28 @@
  */
 
 /* Flow Chart
- Start: Main Thread
- -> Console: [Start] Main Thread
- -> Is the task created with async/await?
- -> Yes
- -> async/await Task Created -> Console: async/await Task Created
- -> Enter Async Function -> Console: Enter Async Function
- -> Encounter await?
- -> Yes -> Console: Encounter await
- -> Console: Suspending Task
- -> Suspend Task
- -> Yield control to runtime
- -> Execute Other Work
- -> Perform Other Work
- -> Console: Other Tasks Running
- -> Async Operation Completed -> Console: Async Operation Completed
- -> Resume Task
- -> Console: Task Resumed
- -> Continue After await
- -> More await Points?
- -> No
- -> Final Completion
- -> Console: [End] Task Finished - Return to Main Thread
- -> End: Return to Main Thread
+Start: Main Thread
+-> Console: [Task#00] Start: Main Thread
+-> Is the task created with async/await?
+-> Yes
+-> [Task#00] async/await Task Created
+-> [Task#00] Enter Async Function
+-> Encounter await?
+-> Yes -> [Task#00] Encounter await
+-> [Task#00] Suspending Task
+-> Suspend Task
+-> Yield control to runtime
+-> Execute Other Work
+-> Perform Other Work
+-> [Task#01] Other Tasks Running
+-> Async Operation Completed -> [Task#00] Async Operation Completed
+-> Resume Task
+-> [Task#00] Task Resumed
+-> [Task#00] Continue After await
+-> More await Points?
+-> No
+-> Final Completion
+-> [Task#00] End: Return to Main Thread
  */
 
 import Foundation
@@ -46,47 +45,49 @@ import Foundation
 func asyncFunctionWithSingleSuspension() async {
 
     // Flow Chart: Enter Async Function
-    print("Enter Async Function")
+    print("[Task#00] Enter Async Function")
 
     // Flow Chart: Encounter await? -> Yes
-    print("Encounter await")
+    print("[Task#00] Encounter await")
 
     // Flow Chart: Console: Suspending Task
-    print("Suspending Task")
+    print("[Task#00] Suspending Task")
 
     // Flow Chart: Suspended Task (Actual suspension point) -> Yield control to runtime
     try? await Task.sleep(for: .seconds(1))
 
     // Flow Chart: Async Operation Completed
-    print("Async Operation Completed")
+    print("[Task#00] Async Operation Completed")
 
     // Flow Chart: Resume Task
-    print("Task Resumed")
+    print("[Task#00] Task Resumed")
 
     // Flow Chart: Continue execution after await
-    print("Continue After await")
+    print("[Task#00] Continue After await")
+
+    print("[Task#00] More await Points? -> No")
 }
 
 func runSingleSuspensionPath() {
 
     // Flow Chart: Start: Main Thread
-    print("[Start] Main Thread")
+    print("[Task#00] Start: Main Thread")
 
     Task {
-
         // Flow Chart: async/await Task Created
-        print("async/await Task Created")
+        print("[Task#00] async/await Task Created")
 
         await asyncFunctionWithSingleSuspension()
 
         // Flow Chart: Final Completion
-        print("[End] Task Finished - Return to Main Thread")
+        print("[Task#00] End: Return to Main Thread")
     }
 
     // Flow Chart: Execute Other Work -> Perform Other Work
+    // Output order may vary due to Swift Concurrency scheduling.
+    for index in 1...3 {
     Task {
-        for index: Int in 1...3 {
-            print("Other Tasks Running (\(index))")
-        }
+        print("[Task#0\(index)] Other Tasks Running")
     }
+  }
 }
