@@ -120,9 +120,9 @@ The executable will display a menu:
 ```
 ===============================
 Experiment 1: Synchronous Path
-Experiment 2: Async No Await
-Experiment 3: Single Suspension
-Experiment 4: Multiple Suspension
+Experiment 2: Async Task Without Await
+Experiment 3: Single Suspension point
+Experiment 4: Multiple Suspension Points
 ===============================
 Select Experiment case:
 ```
@@ -136,6 +136,24 @@ Enter one of the following values and press Enter:
 | 4 | Multiple Suspension Points |
 
 The selected experiment will execute and print its execution flow to the console
+
+### Execution Screenshots
+#### Experiment Selection Menu
+![Experiment Selection Menu](url)
+
+#### Experiment 1: Synchronous Path
+![Experiment 3 Output](url)
+
+#### Experiment 2: Async No Await
+![Experiment 4 Output](url)
+
+#### Experiment 3: Single Suspension
+![Experiment 3 Output](url)
+
+#### Experiment 4: Multiple Suspension
+![Experiment 4 Output](url)
+
+
 
 ### Prerequisites
 This project requires:
