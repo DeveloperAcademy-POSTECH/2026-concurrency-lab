@@ -1,6 +1,6 @@
 // exp4_multiple_suspension.swift
 
-// [case 4 Experiment Function]
+// [Experiment 4: Multiple Suspension]
 // Demonstrates multiple suspension points in an async function.
 
 // This experiment verifies how a Task repeatedly suspends and resumes

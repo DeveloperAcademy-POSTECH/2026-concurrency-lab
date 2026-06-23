@@ -1,6 +1,6 @@
 // exp3_SingleSuspension.swift
 /*
- [Experiment 3: Single Suspension]
+ [Experiment 3: Single Suspension Point]
  Demonstrates a single suspension point in an async function.
 
  This experiment is designed to observe how a single 'await' (suspension point)

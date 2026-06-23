@@ -1,6 +1,6 @@
 // exp2_async_no_await.swift
 
-// [Experiment 2: Async No Await]
+// [Experiment 2: Async Task Without Await]
 // Verifies the execution flow when entering an async context (Task) 
 // but lacking any 'await' suspension points inside the function.
 

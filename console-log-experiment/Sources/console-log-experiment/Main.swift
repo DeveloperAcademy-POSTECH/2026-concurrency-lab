@@ -16,9 +16,9 @@ struct Main {
         print("""
         ===============================
         Experiment 1: Synchronous Path
-        Experiment 2: Async No Await
-        Experiment 3: Single Suspension
-        Experiment 4: Multiple Suspension
+        Experiment 2: Async Task Without Await
+        Experiment 3: Single Suspension point
+        Experiment 4: Multiple Suspension Points
         ===============================
         Select Experiment case:
         """, terminator: " ")
