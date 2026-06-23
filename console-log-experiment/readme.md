@@ -139,19 +139,19 @@ The selected experiment will execute and print its execution flow to the console
 
 ### Execution Screenshots
 #### Experiment Selection Menu
-![Experiment Selection Menu](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-selection-menu.png)
+<img src="https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-selection-menu.png" width="350">
 
 #### Experiment 1: Synchronous Path
-![Experiment 1 Output](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-1.png)
+<img src="https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-1.png" width="350">
 
 #### Experiment 2: Async No Await
-![Experiment 2 Output](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-2.png)
+<img src="https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-2.png" width="350">
 
 #### Experiment 3: Single Suspension
-![Experiment 3 Output](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-3.png)
+<img src="https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-3.png" width="350">
 
 #### Experiment 4: Multiple Suspension
-![Experiment 4 Output](https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-4.png)
+<img src="https://github.com/DeveloperAcademy-POSTECH/2026-concurrency-lab/blob/swift-concurrency/cue/console-log-experiment/console-log-experiment/images/experiment-4.png" width="350">
 
 
 
