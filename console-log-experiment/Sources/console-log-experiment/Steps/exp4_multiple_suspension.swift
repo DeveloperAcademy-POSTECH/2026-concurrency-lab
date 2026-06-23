@@ -52,8 +52,6 @@
 
 import Foundation
 
-@available(macOS 13, *)
-
 // Note:
 // This async function contains multiple suspension points (Task.sleep),
 // causing the Task to suspend and resume multiple times before completion.
@@ -98,7 +96,6 @@ func asyncFunctionWithMultipleAwait() async {
 }
 
 // Triggers and executes case 4 multiple suspension experiment flow.
-@available(macOS 13, *)
 func runMultipleSuspensionPath() {
 
     // Flow Chart: Main thread starts execution

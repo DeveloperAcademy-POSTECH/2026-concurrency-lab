@@ -3,7 +3,6 @@
 
 import Foundation
 
-@available(macOS 13, *)
 @main
 struct Main {
 

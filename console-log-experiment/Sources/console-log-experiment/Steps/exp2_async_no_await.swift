@@ -21,7 +21,6 @@
 
 import Foundation
 
-@available(macOS 13, *) 
 // Note: 
 // This async function contains no suspension points (no 'await' inside body),
 // so it executes sequentially without suspension.
@@ -35,7 +34,6 @@ func asyncFunctionWithoutAwait() async {
 }
 
 /// Triggers and drives the case 2 experiment path.
-@available(macOS 13, *) 
 func runAsyncNoAwaitPath() {
     print("[Start] Main Thread")
 

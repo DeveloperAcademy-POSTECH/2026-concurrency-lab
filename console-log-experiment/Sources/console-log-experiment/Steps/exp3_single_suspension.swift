@@ -40,8 +40,6 @@
 
 import Foundation
 
-@available(macOS 13, *)
-
 // Note:
 // This async function contains exactly one suspension point (Task.sleep),
 // which causes the function to suspend and later resume from the same continuation point.
@@ -69,7 +67,6 @@ func asyncFunctionWithSingleSuspension() async {
     print("Continue After await")
 }
 
-@available(macOS 13, *)
 func runSingleSuspensionPath() {
 
     // Flow Chart: Start: Main Thread
