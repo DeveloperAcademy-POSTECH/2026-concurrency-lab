@@ -11,6 +11,9 @@ struct CentralView: View {
     @State private var model = CentralBLEModel()
     @State private var manager = CentralBLEManager()
 
+    @State private var stressTimer: Timer?
+    @State private var isMainThreadBusy = false
+
     var body: some View {
         VStack(spacing: 20) {
 
@@ -20,6 +23,21 @@ struct CentralView: View {
 
             Text(model.status)
                 .font(.headline)
+
+            // MARK: Main Thread Stress Test
+
+            Button(
+                isMainThreadBusy
+                ? "Stop Main Stress"
+                : "Start Main Stress"
+            ) {
+                if isMainThreadBusy {
+                    stopMainThreadStress()
+                } else {
+                    startMainThreadStress()
+                }
+            }
+            .buttonStyle(.borderedProminent)
 
             HStack {
                 Button("Scan") {
@@ -78,7 +96,9 @@ struct CentralView: View {
                             .padding(.horizontal, 12)
                             .padding(.vertical, 10)
                             .background(.thinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .clipShape(
+                                RoundedRectangle(cornerRadius: 10)
+                            )
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 manager.connect(to: item)
@@ -107,20 +127,59 @@ struct CentralView: View {
                     case .discovered(let item, let log):
                         model.discovered.append(item)
                         model.addLog(log)
-                        
+
                     case .discoveredCleared(let log):
                         model.discovered.removeAll()
                         model.addLog(log)
-                        
+
                     case .statusChanged(let status, let log):
                         model.status = status
                         model.addLog(log)
-                        
+
                     case .log(let message):
                         model.addLog(message)
                     }
                 }
             }
         }
+        .onDisappear {
+            stopMainThreadStress()
+        }
     }
 }
+
+// MARK: - Main Thread Stress Test
+
+extension CentralView {
+
+    private func startMainThreadStress() {
+        guard stressTimer == nil else { return }
+
+        isMainThreadBusy = true
+
+        stressTimer = Timer.scheduledTimer(
+            withTimeInterval: 0.016,
+            repeats: true
+        ) { _ in
+
+            let start = CFAbsoluteTimeGetCurrent()
+
+            // 메인 스레드를 약 30ms 점유함
+            while CFAbsoluteTimeGetCurrent() - start < 0.03 {
+                _ = UUID().uuidString.hashValue
+            }
+        }
+    }
+
+    private func stopMainThreadStress() {
+        isMainThreadBusy = false
+
+        stressTimer?.invalidate()
+        stressTimer = nil
+    }
+}
+
+#Preview {
+    CentralView()
+}
+
