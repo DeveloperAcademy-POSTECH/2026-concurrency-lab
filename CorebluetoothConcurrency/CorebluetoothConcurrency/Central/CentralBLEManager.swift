@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreBluetooth
+import OSLog
 
 enum CentralBLEEvent {
     case bluetoothStateChanged(String, log: String)
@@ -20,6 +21,11 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
     
     private let bleQueue = DispatchQueue(
         label: "com.juni.corebluetooth.central-serial-queue"
+    )
+    
+    private let logger = Logger(
+        subsystem: "com.juni.corebluetooth",
+        category: "Performance"
     )
 
     private var centralManager: CBCentralManager?
