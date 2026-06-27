@@ -12,7 +12,7 @@ enum CentralBLEEvent {
     case bluetoothStateChanged(String, log: String)
     case discovered(DiscoveredPeripheral, log: String)
     case discoveredCleared(log: String)
-    case statusChanged(String, log: String)
+    case statusChanged(ConnectionState, central: CBCentral, peripheral: CBPeripheral)
     case log(String)
 }
 
