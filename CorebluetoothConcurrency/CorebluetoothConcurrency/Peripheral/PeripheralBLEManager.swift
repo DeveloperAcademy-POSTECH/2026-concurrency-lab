@@ -8,11 +8,26 @@
 import Foundation
 import CoreBluetooth
 
+enum AdvertisingState {
+    case started
+    case stopped
+    case failed(Error)
+}
+
+enum PeripheralAnswer {
+    case received(centralID: UUID, answer: BLEAnswer)
+    case invalidValueLength(central: CBCentral)
+    case unsupportedRequest(central: CBCentral)
+}
+
 enum PeripheralBLEEvent {
     case bluetoothStateChanged(String, log: String)
-    case advertisingChanged(Bool, log: String)
+    case advertisingChanged(
+        AdvertisingState,
+        peripheral: CBPeripheralManager
+    )
+    case answerReceived(PeripheralAnswer)
     case log(String)
-    case answerReceived(centralID: UUID, isGood: Bool)
 }
 
 final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
@@ -139,19 +154,21 @@ final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
 
         continuation?.yield(
             .advertisingChanged(
-                true,
-                log: "Advertising started"
+                .started,
+                peripheral: peripheralManager
             )
         )
     }
 
     func stopAdvertising() {
-        peripheralManager?.stopAdvertising()
+        guard let peripheralManager else { return }
+
+        peripheralManager.stopAdvertising()
 
         continuation?.yield(
             .advertisingChanged(
-                false,
-                log: "Advertising stopped"
+                .stopped,
+                peripheral: peripheralManager
             )
         )
     }
@@ -162,12 +179,13 @@ final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
     ) {
         if let error {
             continuation?.yield(
-                .log("Advertising error: \(error.localizedDescription)")
+                .advertisingChanged(
+                    .failed(error),
+                    peripheral: peripheral
+                )
             )
         } else {
-            continuation?.yield(
-                .log("Advertising success")
-            )
+            continuation?.yield(.log("Advertising success"))
         }
     }
 
@@ -179,26 +197,59 @@ final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
     ) {
         for request in requests {
             guard request.characteristic.uuid == BLEUUID.answer else {
-                peripheral.respond(to: request, withResult: .requestNotSupported)
+                continuation?.yield(
+                    .answerReceived(
+                        .unsupportedRequest(central: request.central)
+                    )
+                )
+
+                peripheral.respond(
+                    to: request,
+                    withResult: .requestNotSupported
+                )
                 continue
             }
 
             guard let firstByte = request.value?.first else {
-                peripheral.respond(to: request, withResult: .invalidAttributeValueLength)
+                continuation?.yield(
+                    .answerReceived(
+                        .invalidValueLength(central: request.central)
+                    )
+                )
+
+                peripheral.respond(
+                    to: request,
+                    withResult: .invalidAttributeValueLength
+                )
                 continue
             }
 
-            let isGood = firstByte == BLEAnswer.good.rawValue
+            let answer = BLEAnswer(rawValue: firstByte)
             let centralID = request.central.identifier
 
-            continuation?.yield(
-                .answerReceived(
-                    centralID: centralID,
-                    isGood: isGood
+            if let answer {
+                continuation?.yield(
+                    .answerReceived(
+                        .received(
+                            centralID: centralID,
+                            answer: answer
+                        )
+                    )
                 )
-            )
 
-            peripheral.respond(to: request, withResult: .success)
+                peripheral.respond(to: request, withResult: .success)
+            } else {
+                continuation?.yield(
+                    .answerReceived(
+                        .invalidValueLength(central: request.central)
+                    )
+                )
+
+                peripheral.respond(
+                    to: request,
+                    withResult: .invalidAttributeValueLength
+                )
+            }
         }
     }
 }
