@@ -8,11 +8,26 @@
 import Foundation
 import CoreBluetooth
 
+enum ConnectionState {
+    case connecting(DiscoveredPeripheral)
+    case connected
+    case connectFailed(Error?)
+    case disconnected(Error?)
+    case ready
+    case sent(BLEAnswer)
+    case writeSucceeded
+    case writeFailed(Error)
+}
+
 enum CentralBLEEvent {
     case bluetoothStateChanged(String, log: String)
     case discovered(DiscoveredPeripheral, log: String)
     case discoveredCleared(log: String)
-    case statusChanged(ConnectionState, central: CBCentral, peripheral: CBPeripheral)
+    case statusChanged(
+        ConnectionState,
+        central: CBCentralManager?,
+        peripheral: CBPeripheral?
+    )
     case log(String)
 }
 
@@ -140,24 +155,26 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
 
         continuation?.yield(
             .statusChanged(
-                "Connecting...",
-                log: "Connecting to \(item.name)"
+                .connecting(item),
+                central: centralManager,
+                peripheral: item.peripheral
             )
         )
     }
 
     func disconnect() {
-        if let peripheral = targetPeripheral {
-            centralManager?.cancelPeripheralConnection(peripheral)
-        }
+        guard let peripheral = targetPeripheral else { return }
+
+        centralManager?.cancelPeripheralConnection(peripheral)
 
         targetPeripheral = nil
         answerCharacteristic = nil
 
         continuation?.yield(
             .statusChanged(
-                "Disconnected",
-                log: "Disconnected"
+                .disconnected(nil),
+                central: centralManager,
+                peripheral: peripheral
             )
         )
     }
@@ -183,8 +200,9 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
 
         continuation?.yield(
             .statusChanged(
-                "Sent \(answer == .good ? "조아용" : "시러용")",
-                log: "Sent \(answer == .good ? "조아용" : "시러용")"
+                .sent(answer),
+                central: centralManager,
+                peripheral: peripheral
             )
         )
     }
@@ -194,7 +212,7 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
     func centralManager(
         _ central: CBCentralManager,
         didDiscover peripheral: CBPeripheral,
-        advertisementData: [String : Any],
+        advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
         let name =
@@ -227,8 +245,9 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
     ) {
         continuation?.yield(
             .statusChanged(
-                "Connected",
-                log: "iPhone과 연결"
+                .connected,
+                central: central,
+                peripheral: peripheral
             )
         )
 
@@ -242,8 +261,9 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
     ) {
         continuation?.yield(
             .statusChanged(
-                "Connect failed",
-                log: "Connect failed: \(error?.localizedDescription ?? "unknown")"
+                .connectFailed(error),
+                central: central,
+                peripheral: peripheral
             )
         )
     }
@@ -255,8 +275,9 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
     ) {
         continuation?.yield(
             .statusChanged(
-                "Disconnected",
-                log: "Disconnected"
+                .disconnected(error),
+                central: central,
+                peripheral: peripheral
             )
         )
 
@@ -306,8 +327,9 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
 
             continuation?.yield(
                 .statusChanged(
-                    "Ready",
-                    log: "Ready to send"
+                    .ready,
+                    central: centralManager,
+                    peripheral: peripheral
                 )
             )
 
@@ -326,15 +348,17 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         if let error {
             continuation?.yield(
                 .statusChanged(
-                    "Write failed",
-                    log: "Write failed: \(error.localizedDescription)"
+                    .writeFailed(error),
+                    central: centralManager,
+                    peripheral: peripheral
                 )
             )
         } else {
             continuation?.yield(
                 .statusChanged(
-                    "Write success",
-                    log: "쓰기 성공"
+                    .writeSucceeded,
+                    central: centralManager,
+                    peripheral: peripheral
                 )
             )
         }
