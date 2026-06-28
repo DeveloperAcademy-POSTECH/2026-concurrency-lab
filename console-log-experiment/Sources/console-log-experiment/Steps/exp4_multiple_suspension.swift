@@ -1,0 +1,122 @@
+// exp4_multiple_suspension.swift
+
+// [Experiment 4: Multiple Suspension]
+// Demonstrates multiple suspension points in an async function.
+
+// This experiment verifies how a Task repeatedly suspends and resumes
+// when encountering multiple 'await' suspension points during execution.
+
+/*
+ Flow Chart
+ Start: Main Thread
+ -> Console: [Start] Main Thread
+ -> Is the task created with async/await?
+ -> Yes
+ -> async/await Task Created -> Console: async/await Task Created
+ -> Enter Async Function -> Console: Enter Async Function
+ -> Encounter await?
+ -> Yes -> Console: Encounter await
+ -> Console: Suspending Task
+ -> Suspend Task
+ -> Yield control to runtime
+ -> Console: Task Suspended
+ -> Execute Other Work
+ -> Perform Other Work
+ -> Console: Other Tasks Running
+ -> Async Operation Completed -> Console: Async Operation Completed
+ -> Resume Task
+ -> Console: Task Resumed
+ -> Continue After await -> Console: Continue After await
+ -> More await Points?
+ -> Yes
+
+ [Repeat Suspension / Resume Cycle]
+
+-> Suspend Task
+ -> Yield control to runtime
+ -> Console: Task Suspended
+ -> Execute Other Work
+ -> Perform Other Work
+ -> Console: Other Tasks Running
+ -> Async Operation Completed -> Console: Async Operation Completed
+ -> Resume Task
+ -> Console: Task Resumed
+ -> Continue After await -> Console: Continue After await
+ -> More await Points?
+ -> No
+
+ -> Final Completion
+ -> Console: [End] Task Finished - Return to Main Thread
+ -> End: Return to Main Thread
+*/
+
+import Foundation
+
+// Note:
+// This async function contains multiple suspension points (Task.sleep),
+// causing the Task to suspend and resume multiple times before completion.
+
+func asyncFunctionWithMultipleAwait() async {
+
+    // Flow Chart: Enter Async Function
+    print("[Task#00] Enter Async Function")
+
+    // ===== Suspension Point #1 =====
+    // Flow Chart: Encounter await? -> Yes -> Suspend Task -> Yield control to runtime
+    print("[Task#00] Suspending Task")
+
+    // Actual suspension point
+    try? await Task.sleep(for: .seconds(1))
+
+    // Flow Chart: Async Operation Completed -> Resume Task
+    print("[Task#00] Task Resumed")
+
+    // Flow Chart: Continue After await
+    print("[Task#00] Continue After await")
+
+    // Flow Chart: More await Points? -> Yes
+    print("[Task#00] More await Points? -> Yes")
+
+    // ===== Suspension Point #2 =====
+
+    // Flow Chart: Suspend Task -> Yield control to runtime
+    print("[Task#00] Suspending Task")
+
+    // Actual suspension point
+    try? await Task.sleep(for: .seconds(1))
+
+    // Flow Chart: Async Operation Completed -> Resume Task
+    print("[Task#00] Task Resumed")
+
+    // Flow Chart: Continue After await
+    print("[Task#00] Continue After await")
+
+    print("[Task#00] More await Points? -> No")
+}
+
+// Triggers and executes case 4 multiple suspension experiment flow.
+func runMultipleSuspensionPath() {
+
+    // Flow Chart: Main thread starts execution
+    print("[Task#00] Start: Main Thread")
+
+    // Simulated concurrent work executed while the primary Task is suspended
+    // Output order may vary due to Swift Concurrency scheduling.
+    for index in 1...6 {
+        Task {
+            try? await Task.sleep(for: .seconds(Double(index) * 0.3))
+            print("[Task#0\(index)] Other Tasks Running")
+        }
+    }
+
+    Task {
+        // Flow Chart: Async task is created and scheduled by runtime
+        print("[Task#00] async/await Task Created")
+
+        // Execute async function containing multiple suspension points
+        await asyncFunctionWithMultipleAwait()
+
+        // Flow Chart: Final completion of async task execution
+        print("[Task#00] End: Task Finished - Return to Main Thread")
+    }
+}
