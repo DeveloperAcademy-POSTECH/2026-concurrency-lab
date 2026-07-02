@@ -31,6 +31,10 @@ enum PeripheralBLEEvent {
 }
 
 final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
+    
+    private let bleQueue = DispatchQueue(
+        label: "com.juni.corebluetooth.peripheral-serial-queue"
+    )
 
     private var peripheralManager: CBPeripheralManager?
     private var answerCharacteristic: CBMutableCharacteristic?
@@ -46,7 +50,7 @@ final class PeripheralBLEManager: NSObject, CBPeripheralManagerDelegate {
 
         self.peripheralManager = CBPeripheralManager(
             delegate: self,
-            queue: nil
+            queue: bleQueue
         )
     }
 

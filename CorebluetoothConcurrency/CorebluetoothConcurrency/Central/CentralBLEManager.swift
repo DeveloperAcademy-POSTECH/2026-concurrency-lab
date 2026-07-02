@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreBluetooth
+import OSLog
 
 enum ConnectionState {
     case connecting(DiscoveredPeripheral)
@@ -32,6 +33,20 @@ enum CentralBLEEvent {
 }
 
 final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
+    
+    private let bleQueue = DispatchQueue(
+        label: "com.juni.corebluetooth.central-serial-queue"
+    )
+    
+    private let logger = Logger(
+        subsystem: "com.juni.corebluetooth",
+        category: "Performance"
+    )
+    
+    private var connectStart: CFAbsoluteTime?
+    private var discoverServicesStart: CFAbsoluteTime?
+    private var discoverCharacteristicsStart: CFAbsoluteTime?
+    private var writeStart: CFAbsoluteTime?
 
     private var centralManager: CBCentralManager?
     private var targetPeripheral: CBPeripheral?
@@ -51,7 +66,7 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
 
         self.centralManager = CBCentralManager(
             delegate: self,
-            queue: nil
+            queue: bleQueue
         )
     }
 
@@ -147,6 +162,8 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
     // MARK: - 연결 관리
 
     func connect(to item: DiscoveredPeripheral) {
+        connectStart = CFAbsoluteTimeGetCurrent()
+
         targetPeripheral = item.peripheral
         targetPeripheral?.delegate = self
 
@@ -191,6 +208,8 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         }
 
         let data = Data([answer.rawValue])
+        
+        writeStart = CFAbsoluteTimeGetCurrent()
 
         peripheral.writeValue(
             data,
@@ -243,6 +262,19 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         _ central: CBCentralManager,
         didConnect peripheral: CBPeripheral
     ) {
+
+        if let start = connectStart {
+            let elapsed = CFAbsoluteTimeGetCurrent() - start
+
+            logger.notice(
+                "BLE Connect Time: \(elapsed, format: .fixed(precision: 3)) sec"
+            )
+
+            connectStart = nil
+        }
+
+        discoverServicesStart = CFAbsoluteTimeGetCurrent()
+
         continuation?.yield(
             .statusChanged(
                 .connected,
@@ -291,6 +323,16 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         _ peripheral: CBPeripheral,
         didDiscoverServices error: Error?
     ) {
+        if let start = discoverServicesStart {
+            let elapsed = CFAbsoluteTimeGetCurrent() - start
+
+            logger.notice(
+                "BLE Discover Services Time: \(elapsed, format: .fixed(precision: 3)) sec"
+            )
+
+            discoverServicesStart = nil
+        }
+        
         if let error {
             continuation?.yield(
                 .log("Discover services error: \(error.localizedDescription)")
@@ -301,6 +343,9 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         guard let services = peripheral.services else { return }
 
         for service in services where service.uuid == BLEUUID.service {
+
+            discoverCharacteristicsStart = CFAbsoluteTimeGetCurrent()
+
             peripheral.discoverCharacteristics(
                 [BLEUUID.answer],
                 for: service
@@ -313,6 +358,16 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         didDiscoverCharacteristicsFor service: CBService,
         error: Error?
     ) {
+        if let start = discoverCharacteristicsStart {
+            let elapsed = CFAbsoluteTimeGetCurrent() - start
+
+            logger.notice(
+                "BLE Discover Characteristics Time: \(elapsed, format: .fixed(precision: 3)) sec"
+            )
+
+            discoverCharacteristicsStart = nil
+        }
+        
         if let error {
             continuation?.yield(
                 .log("Discover characteristics error: \(error.localizedDescription)")
@@ -345,6 +400,16 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         didWriteValueFor characteristic: CBCharacteristic,
         error: Error?
     ) {
+        if let start = writeStart {
+            let elapsed = CFAbsoluteTimeGetCurrent() - start
+
+            logger.notice(
+                "BLE Write Time: \(elapsed, format: .fixed(precision: 3)) sec"
+            )
+
+            writeStart = nil
+        }
+        
         if let error {
             continuation?.yield(
                 .statusChanged(
@@ -364,3 +429,4 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         }
     }
 }
+
