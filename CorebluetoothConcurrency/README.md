@@ -70,12 +70,25 @@ continuation?.yield(
 )
 ```
 
-State updates and logging were then handled sequentially in the event consumer using `for await`.
+The event consumer receives BLE events through `for await` and updates the application state according to each event type. This keeps Delegate callbacks focused on event production while centralizing state management in a single location.
 
 ```swift
 for await event in manager.events {
-    // update state
-    // add log
+    switch event {
+    case .bluetoothStateChanged(let state, let log):
+        model.bluetoothStateText = state
+        model.addLog(log)
+
+    case .advertisingChanged(let isAdvertising, let log):
+        model.isAdvertising = isAdvertising
+        model.addLog(log)
+
+    case .log(let message):
+        model.addLog(message)
+
+    case .answerReceived(let centralID, let isGood):
+        model.receiveAnswer(from: centralID, value: isGood)
+    }
 }
 ```
 
@@ -371,12 +384,25 @@ continuation?.yield(
 )
 ```
 
-이후 상태 변경과 로그 기록은 `for await`를 사용하는 이벤트 소비 영역에서 순차적으로 처리하도록 분리하였다.
+`for await`를 통해 전달된 BLE 이벤트를 소비하면서 이벤트 종류에 따라 상태를 갱신한다. 이를 통해 Delegate는 이벤트 생성만 담당하고, 상태 관리는 하나의 소비 영역에서 일관되게 처리할 수 있다.
 
 ```swift
 for await event in manager.events {
-    // update state
-    // add log
+    switch event {
+    case .bluetoothStateChanged(let state, let log):
+        model.bluetoothStateText = state
+        model.addLog(log)
+
+    case .advertisingChanged(let isAdvertising, let log):
+        model.isAdvertising = isAdvertising
+        model.addLog(log)
+
+    case .log(let message):
+        model.addLog(message)
+
+    case .answerReceived(let centralID, let isGood):
+        model.receiveAnswer(from: centralID, value: isGood)
+    }
 }
 ```
 
