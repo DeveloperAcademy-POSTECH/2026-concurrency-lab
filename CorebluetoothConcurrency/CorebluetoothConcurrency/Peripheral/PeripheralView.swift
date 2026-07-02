@@ -9,7 +9,7 @@ import SwiftUI
 
 struct PeripheralView: View {
     @State private var model = PeripheralBLEModel()
-    @State private var manager: PeripheralBLEManager?
+    @State private var manager = PeripheralBLEManager()
 
     var body: some View {
         VStack(spacing: 20) {
@@ -25,12 +25,12 @@ struct PeripheralView: View {
 
             HStack {
                 Button("Start Advertising") {
-                    manager?.startAdvertising()
+                    manager.startAdvertising()
                 }
                 .buttonStyle(.bordered)
 
                 Button("Stop") {
-                    manager?.stopAdvertising()
+                    manager.stopAdvertising()
                 }
                 .buttonStyle(.bordered)
             }
@@ -59,9 +59,23 @@ struct PeripheralView: View {
             }
         }
         .padding()
-        .onAppear {
-            if manager == nil {
-                manager = PeripheralBLEManager(model: model)
+        .task {
+            for await event in manager.events {
+                switch event {
+                case .bluetoothStateChanged(let state, let log):
+                    model.bluetoothStateText = state
+                    model.addLog(log)
+
+                case .advertisingChanged(let isAdvertising, let log):
+                    model.isAdvertising = isAdvertising
+                    model.addLog(log)
+
+                case .log(let message):
+                    model.addLog(message)
+
+                case .answerReceived(let centralID, let isGood):
+                    model.receiveAnswer(from: centralID, value: isGood)
+                }
             }
         }
     }

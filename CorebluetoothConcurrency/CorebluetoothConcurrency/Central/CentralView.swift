@@ -9,7 +9,7 @@ import SwiftUI
 
 struct CentralView: View {
     @State private var model = CentralBLEModel()
-    @State private var manager: CentralBLEManager?
+    @State private var manager = CentralBLEManager()
 
     var body: some View {
         VStack(spacing: 20) {
@@ -23,29 +23,29 @@ struct CentralView: View {
 
             HStack {
                 Button("Scan") {
-                    manager?.scan()
+                    manager.scan()
                 }
                 .buttonStyle(.bordered)
 
                 Button("Stop Scan") {
-                    manager?.stopScan()
+                    manager.stopScan()
                 }
                 .buttonStyle(.bordered)
 
                 Button("Disconnect") {
-                    manager?.disconnect()
+                    manager.disconnect()
                 }
                 .buttonStyle(.bordered)
             }
 
             HStack {
                 Button("조아용") {
-                    manager?.send(.good)
+                    manager.send(.good)
                 }
                 .buttonStyle(.bordered)
 
                 Button("시러용") {
-                    manager?.send(.bad)
+                    manager.send(.bad)
                 }
                 .buttonStyle(.bordered)
             }
@@ -81,7 +81,7 @@ struct CentralView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                manager?.connect(to: item)
+                                manager.connect(to: item)
                             }
                         }
                     }
@@ -96,9 +96,28 @@ struct CentralView: View {
             }
         }
         .padding()
-        .onAppear {
-            if manager == nil {
-                manager = CentralBLEManager(model: model)
+        .task {
+            for await event in manager.events {
+                switch event {
+                case .bluetoothStateChanged(let state, let log):
+                    model.status = state
+                    model.addLog(log)
+
+                case .discovered(let item, let log):
+                    model.discovered.append(item)
+                    model.addLog(log)
+
+                case .discoveredCleared(let log):
+                    model.discovered.removeAll()
+                    model.addLog(log)
+
+                case .statusChanged(let status, let log):
+                    model.status = status
+                    model.addLog(log)
+
+                case .log(let message):
+                    model.addLog(message)
+                }
             }
         }
     }

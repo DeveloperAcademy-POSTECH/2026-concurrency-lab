@@ -8,17 +8,45 @@
 import Foundation
 import CoreBluetooth
 
+enum ConnectionState {
+    case connecting(DiscoveredPeripheral)
+    case connected
+    case connectFailed(Error?)
+    case disconnected(Error?)
+    case ready
+    case sent(BLEAnswer)
+    case writeSucceeded
+    case writeFailed(Error)
+}
+
+enum CentralBLEEvent {
+    case bluetoothStateChanged(String, log: String)
+    case discovered(DiscoveredPeripheral, log: String)
+    case discoveredCleared(log: String)
+    case statusChanged(
+        ConnectionState,
+        central: CBCentralManager?,
+        peripheral: CBPeripheral?
+    )
+    case log(String)
+}
+
 final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate {
 
     private var centralManager: CBCentralManager?
     private var targetPeripheral: CBPeripheral?
     private var answerCharacteristic: CBCharacteristic?
 
-    private let model: CentralBLEModel
     private var pendingAnswer: BLEAnswer?
+    private var discoveredIDs: Set<UUID> = []
 
-    init(model: CentralBLEModel) {
-        self.model = model
+    private var continuation: AsyncStream<CentralBLEEvent>.Continuation?
+
+    lazy var events = AsyncStream<CentralBLEEvent> { continuation in
+        self.continuation = continuation
+    }
+
+    override init() {
         super.init()
 
         self.centralManager = CBCentralManager(
@@ -26,48 +54,82 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
             queue: nil
         )
     }
-    
+
     // MARK: - 블루투스 상태 관리
 
     func centralManagerDidUpdateState(_ central: CBCentralManager) {
         switch central.state {
         case .poweredOn:
-            model.status = "Powered On"
-            model.addLog("블루투스 활성화")
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Powered On",
+                    log: "블루투스 활성화"
+                )
+            )
 
         case .poweredOff:
-            model.status = "Powered Off"
-            model.addLog("블루투스 비활성화")
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Powered Off",
+                    log: "블루투스 비활성화"
+                )
+            )
 
         case .unauthorized:
-            model.status = "Unauthorized"
-            model.addLog("블루투스 권한 없음")
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Unauthorized",
+                    log: "블루투스 권한 없음"
+                )
+            )
 
         case .unsupported:
-            model.status = "Unsupported"
-            model.addLog("이 기기는 블루투스를 지원하지 않음")
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Unsupported",
+                    log: "이 기기는 블루투스를 지원하지 않음"
+                )
+            )
 
         case .resetting:
-            model.status = "Resetting"
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Resetting",
+                    log: "블루투스 상태 재설정 중"
+                )
+            )
 
         case .unknown:
-            model.status = "Unknown"
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Unknown",
+                    log: "블루투스 상태 알 수 없음"
+                )
+            )
 
         @unknown default:
-            model.status = "Bluetooth not ready"
+            continuation?.yield(
+                .bluetoothStateChanged(
+                    "Bluetooth not ready",
+                    log: "알 수 없는 블루투스 상태"
+                )
+            )
         }
     }
-    
+
     // MARK: - 기기 검색
 
     func scan() {
         guard centralManager?.state == .poweredOn else {
-            model.addLog("블루투스 상태가 올바르지 않음")
+            continuation?.yield(.log("블루투스 상태가 올바르지 않음"))
             return
         }
 
-        model.discovered.removeAll()
-        model.addLog("Scanning...")
+        discoveredIDs.removeAll()
+
+        continuation?.yield(
+            .discoveredCleared(log: "Scanning...")
+        )
 
         centralManager?.scanForPeripherals(
             withServices: nil,
@@ -79,9 +141,9 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
 
     func stopScan() {
         centralManager?.stopScan()
-        model.addLog("Scan stopped")
+        continuation?.yield(.log("Scan stopped"))
     }
-    
+
     // MARK: - 연결 관리
 
     func connect(to item: DiscoveredPeripheral) {
@@ -91,21 +153,32 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         centralManager?.stopScan()
         centralManager?.connect(item.peripheral, options: nil)
 
-        model.status = "Connecting..."
-        model.addLog("Connecting to \(item.name)")
+        continuation?.yield(
+            .statusChanged(
+                .connecting(item),
+                central: centralManager,
+                peripheral: item.peripheral
+            )
+        )
     }
 
     func disconnect() {
-        if let peripheral = targetPeripheral {
-            centralManager?.cancelPeripheralConnection(peripheral)
-        }
+        guard let peripheral = targetPeripheral else { return }
+
+        centralManager?.cancelPeripheralConnection(peripheral)
 
         targetPeripheral = nil
         answerCharacteristic = nil
-        model.status = "Disconnected"
-        model.addLog("Disconnected")
+
+        continuation?.yield(
+            .statusChanged(
+                .disconnected(nil),
+                central: centralManager,
+                peripheral: peripheral
+            )
+        )
     }
-    
+
     // MARK: - 데이터 전송
 
     func send(_ answer: BLEAnswer) {
@@ -113,7 +186,7 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
               let characteristic = answerCharacteristic
         else {
             pendingAnswer = answer
-            model.addLog("아직 연결 준비 안 됨")
+            continuation?.yield(.log("아직 연결 준비 안 됨"))
             return
         }
 
@@ -125,16 +198,21 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
             type: .withResponse
         )
 
-        model.status = "Sent \(answer == .good ? "조아용" : "시러용")"
-        model.addLog("Sent \(answer == .good ? "조아용" : "시러용")")
+        continuation?.yield(
+            .statusChanged(
+                .sent(answer),
+                central: centralManager,
+                peripheral: peripheral
+            )
+        )
     }
-    
+
     // MARK: - CBCentralManagerDelegate
 
     func centralManager(
         _ central: CBCentralManager,
         didDiscover peripheral: CBPeripheral,
-        advertisementData: [String : Any],
+        advertisementData: [String: Any],
         rssi RSSI: NSNumber
     ) {
         let name =
@@ -149,18 +227,29 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
             peripheral: peripheral
         )
 
-        if !model.discovered.contains(where: { $0.id == item.id }) {
-            model.discovered.append(item)
-            model.addLog("Found: \(name)")
-        }
+        guard !discoveredIDs.contains(item.id) else { return }
+
+        discoveredIDs.insert(item.id)
+
+        continuation?.yield(
+            .discovered(
+                item,
+                log: "Found: \(name)"
+            )
+        )
     }
 
     func centralManager(
         _ central: CBCentralManager,
         didConnect peripheral: CBPeripheral
     ) {
-        model.status = "Connected"
-        model.addLog("iPhone과 연결")
+        continuation?.yield(
+            .statusChanged(
+                .connected,
+                central: central,
+                peripheral: peripheral
+            )
+        )
 
         peripheral.discoverServices([BLEUUID.service])
     }
@@ -170,8 +259,13 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         didFailToConnect peripheral: CBPeripheral,
         error: Error?
     ) {
-        model.status = "Connect failed"
-        model.addLog("Connect failed: \(error?.localizedDescription ?? "unknown")")
+        continuation?.yield(
+            .statusChanged(
+                .connectFailed(error),
+                central: central,
+                peripheral: peripheral
+            )
+        )
     }
 
     func centralManager(
@@ -179,13 +273,18 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         didDisconnectPeripheral peripheral: CBPeripheral,
         error: Error?
     ) {
-        model.status = "Disconnected"
-        model.addLog("Disconnected")
+        continuation?.yield(
+            .statusChanged(
+                .disconnected(error),
+                central: central,
+                peripheral: peripheral
+            )
+        )
 
         targetPeripheral = nil
         answerCharacteristic = nil
     }
-    
+
     // MARK: - CBPeripheralDelegate
 
     func peripheral(
@@ -193,7 +292,9 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         didDiscoverServices error: Error?
     ) {
         if let error {
-            model.addLog("Discover services error: \(error.localizedDescription)")
+            continuation?.yield(
+                .log("Discover services error: \(error.localizedDescription)")
+            )
             return
         }
 
@@ -213,7 +314,9 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         error: Error?
     ) {
         if let error {
-            model.addLog("Discover characteristics error: \(error.localizedDescription)")
+            continuation?.yield(
+                .log("Discover characteristics error: \(error.localizedDescription)")
+            )
             return
         }
 
@@ -221,8 +324,14 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
 
         for characteristic in characteristics where characteristic.uuid == BLEUUID.answer {
             answerCharacteristic = characteristic
-            model.status = "Ready"
-            model.addLog("Ready to send")
+
+            continuation?.yield(
+                .statusChanged(
+                    .ready,
+                    central: centralManager,
+                    peripheral: peripheral
+                )
+            )
 
             if let pendingAnswer {
                 self.pendingAnswer = nil
@@ -237,11 +346,21 @@ final class CentralBLEManager: NSObject, CBCentralManagerDelegate, CBPeripheralD
         error: Error?
     ) {
         if let error {
-            model.status = "Write failed"
-            model.addLog("Write failed: \(error.localizedDescription)")
+            continuation?.yield(
+                .statusChanged(
+                    .writeFailed(error),
+                    central: centralManager,
+                    peripheral: peripheral
+                )
+            )
         } else {
-            model.status = "Write success"
-            model.addLog("쓰기 성공")
+            continuation?.yield(
+                .statusChanged(
+                    .writeSucceeded,
+                    central: centralManager,
+                    peripheral: peripheral
+                )
+            )
         }
     }
 }
