@@ -34,6 +34,8 @@ CoreBluetooth provides a Delegate-based API and allows developers to specify the
 
 When the `queue` parameter is set to `nil`, Delegate callbacks are executed on the **Main Queue**, meaning BLE event handling shares the same execution context as UI rendering and user interactions.
 
+[Apple Inc. CBCentralManager init(delegate:queue:options:). Apple Developer Documentation]
+
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/d78f2d46-6868-41da-a0e6-c7f287e8f8e4" />
 
 In the original implementation, BLE event handling, state updates, and logging were all performed directly inside Delegate callbacks.
@@ -176,19 +178,44 @@ for await event in manager.events {
 
 ## Problem
 
-BLE event handling and state updates were tightly coupled inside Delegate callbacks.
+CoreBluetooth provides a Delegate-based API. In the previous implementation, each Delegate callback was responsible not only for handling BLE events but also for updating application state and writing logs.
 
-As a result, the Manager needed to know how the Model managed its state, making event generation and state management strongly coupled.
+```swift
+if !model.discovered.contains(where: { $0.id == item.id }) {
+    model.discovered.append(item)
+    model.addLog("Found: \(name)")
+}
+```
+
+A Delegate callback is intended to notify the application that a system event has occurred, such as discovering or connecting to a peripheral. However, the previous implementation combined event notification with application state updates, such as modifying the discovered list and recording logs.
+
+As a result, event generation and state management were tightly coupled within the same callback methods. Because state updates were scattered across multiple Delegate callbacks, it became difficult to follow how a BLE event propagated through the application and resulted in state changes. This structure also made it difficult to integrate the Delegate-based API with Swift Concurrency and build a consistent asynchronous event flow.
 
 ## Approach
 
-The Delegate pattern remained unchanged, but Delegate callbacks were modified to emit events through `AsyncStream` instead of directly updating state.
+The Delegate pattern remains unchanged, but Delegate callbacks no longer update application state directly. Instead, they emit BLE events through an AsyncStream.
 
 ```swift
-continuation?.yield(.discovered(item, log: "Found: \(name)"))
+func centralManager(
+    _ central: CBCentralManager,
+    didDiscover peripheral: CBPeripheral,
+    advertisementData: [String : Any],
+    rssi RSSI: NSNumber
+) {
+    let item = ...
+
+    continuation?.yield(
+        .discovered(
+            item,
+            log: "Found: \(item.name)"
+        )
+    )
+}
 ```
 
-The Manager now only produces events, while state updates are handled by the event consumer.
+The Delegate callback is now responsible only for publishing BLE events to the AsyncStream. An event consumer, such as a ViewModel, receives these events using for await and performs the corresponding state updates and logging.
+
+This separates event production from state management. The Delegate layer focuses solely on forwarding CoreBluetooth events, while the application state is updated consistently in the event cons
 
 ## Result
 
@@ -348,6 +375,8 @@ Delegate Callback 기반 CoreBluetooth 구조와 Swift Concurrency 기반 구조
 CoreBluetooth는 Delegate 기반 API를 제공하며, `CBCentralManager(delegate:queue:)`를 통해 Delegate Callback이 실행될 Queue를 개발자가 직접 지정할 수 있다.
 기본적으로 queue를 `nil`로 설정하면 Delegate Callback은 Main Queue에서 실행되며, BLE 이벤트 처리와 UI Rendering, 사용자 입력 처리 등이 동일한 실행 컨텍스트를 공유한다.
 
+[Apple Inc. CBCentralManager init(delegate:queue:options:). Apple Developer Documentation]
+
 <img width="600" alt="image" src="https://github.com/user-attachments/assets/d78f2d46-6868-41da-a0e6-c7f287e8f8e4" />
 
 
@@ -485,25 +514,49 @@ for await event in manager.events {
 
 ---
 
-## Experiment 1: AsyncStream 적용
+# Experiment 1: AsyncStream 적용
 
-### Problem
+## Problem
 
-기존 구조에서는 BLE 이벤트 처리와 상태 변경이 Delegate Callback 내부에 함께 존재했다.
-
-이로 인해 Manager가 Model의 상태 변경 방식까지 알고 있어야 했고, 이벤트 발생 위치와 상태 변경 위치가 강하게 결합되어 있었다.
-
-### Approach
-
-Delegate 구조는 유지하되, Delegate Callback에서 직접 상태를 변경하지 않고 `AsyncStream`을 통해 이벤트를 전달하도록 변경하였다.
+CoreBluetooth는 Delegate 기반 API를 제공한다. 기존 구현에서는 BLE 기기를 발견하거나 연결 상태가 변경될 때마다 Delegate callback이 호출되었으며, 각 callback 내부에서 BLE 이벤트 처리와 함께 상태 변경 및 로그 기록까지 모두 수행하고 있었다.
 
 ```swift
-continuation?.yield(.discovered(item, log: "Found: \(name)"))
+if !model.discovered.contains(where: { $0.id == item.id }) {
+    model.discovered.append(item)
+    model.addLog("Found: \(name)")
+}
 ```
 
-이 구조에서는 Manager가 상태를 직접 변경하지 않고 이벤트만 발생시킨다.
+Delegate callback은 원래 "기기를 발견했다", "연결되었다"와 같은 시스템 이벤트를 전달하는 역할을 한다. 그러나 기존 구현에서는 이벤트를 전달하는 역할뿐 아니라 discovered 목록 갱신과 로그 기록 같은 애플리케이션 상태 관리까지 함께 수행하였다.
 
-즉, Manager는 Model을 알 필요가 없고, 상태 변경은 이벤트를 소비하는 ViewModel 또는 Consumer 영역에서 처리된다.
+이로 인해 이벤트 생성과 상태 관리가 하나의 callback에 강하게 결합되었고, 상태 변경 로직이 여러 Delegate callback에 분산되면서 어떤 이벤트가 어떤 상태 변경으로 이어지는지 전체 흐름을 파악하기 어려웠다. 또한 Delegate 기반 비동기 API를 Swift Concurrency의 AsyncSequence 기반 흐름으로 자연스럽게 연결하기도 어려웠다.
+
+## Approach
+
+Delegate 구조는 그대로 유지하되, Delegate callback에서 직접 애플리케이션 상태를 변경하는 대신 AsyncStream을 통해 BLE 이벤트를 전달하도록 변경하였다.
+
+```swift
+func centralManager(
+    _ central: CBCentralManager,
+    didDiscover peripheral: CBPeripheral,
+    advertisementData: [String : Any],
+    rssi RSSI: NSNumber
+) {
+    let item = ...
+
+    continuation?.yield(
+        .discovered(
+            item,
+            log: "Found: \(item.name)"
+        )
+    )
+}
+```
+
+Delegate callback은 이제 BLE 이벤트를 AsyncStream으로 전달하는 역할만 수행한다. 이후 ViewModel과 같은 이벤트 소비자는 for await를 통해 이벤트를 수신하고, 필요한 상태 변경과 로그 기록을 처리한다.
+
+이를 통해 이벤트 생성(Event Production) 과 상태 관리(State Management) 의 책임을 분리하였다. Delegate는 CoreBluetooth 이벤트를 전달하는 역할에 집중하고, 애플리케이션 상태는 이벤트를 소비하는 계층에서 일관되게 관리할 수 있게 되었다.
+
 
 ### Result
 
@@ -517,9 +570,9 @@ continuation?.yield(.discovered(item, log: "Found: \(name)"))
 
 ---
 
-## Experiment 2: Delegate Queue 분리
+# Experiment 2: Delegate Queue 분리
 
-### Problem
+## Problem
 
 `CBCentralManager(delegate:queue:)`에서 `queue`를 `nil`로 설정하면 Delegate Callback은 기본적으로 Main Queue에서 실행된다.
 
@@ -527,7 +580,7 @@ continuation?.yield(.discovered(item, log: "Found: \(name)"))
 
 평소에는 Callback 작업이 가볍기 때문에 차이가 크지 않을 수 있다. 하지만 Main Thread에 부하가 발생하면 BLE Callback도 Main Queue가 비워질 때까지 기다릴 수 있다.
 
-### Approach
+## Approach
 
 `CBCentralManager(delegate:queue:)`의 `queue`를 `nil`에서 BLE 전용 Serial DispatchQueue로 변경하였다.
 
