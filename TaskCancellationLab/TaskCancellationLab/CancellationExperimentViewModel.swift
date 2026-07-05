@@ -13,6 +13,8 @@ final class CancellationExperimentViewModel: ObservableObject {
     @Published var logs: [ExperimentLog] = []
 
     private var task: Task<Void, Never>?
+    
+    // Tuned for UI observability, not derived from measured cancellation behavior.
     private let delaySeconds = 1.2
 
     // The UI highlights the most recent event while the full timeline remains scrollable.

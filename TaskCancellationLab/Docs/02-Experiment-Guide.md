@@ -104,4 +104,4 @@ This difference is the starting point for understanding cooperative cancellation
 
 ## Timing
 
-The experiment uses a fixed delay of `1.2s` between cells. This keeps the interaction simple and gives enough time to press `Cancel` while a cell is waiting or blocking.
+The app uses a fixed delay of `1.2s` between cells as an observation setting. This value is not a measured result of the experiment; it simply keeps the interaction slow enough to press `Cancel` while a cell is waiting or blocking, without adding a delay slider to the UI.
