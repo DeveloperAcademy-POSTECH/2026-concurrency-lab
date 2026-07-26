@@ -61,9 +61,11 @@ TaskGroup, Actor, @MainActor와 같은 Swift Concurrency 개념을 사용해 이
 
 ```text
 ConcurrencyImageGallery/
+├── ConcurrencyImageGallery.xcodeproj/
 ├── ConcurrencyImageGallery/
 │   ├── ConcurrencyImageGalleryApp.swift
 │   ├── TabView.swift
+│   ├── Assets.xcassets/
 │   ├── Models/
 │   │   ├── LoadedImage.swift
 │   │   └── PicsumImage.swift
@@ -85,7 +87,8 @@ ConcurrencyImageGallery/
 │           └── ImageCache.swift
 ├── ConcurrencyImageGalleryTests/
 │   └── ConcurrencyImageGalleryTests.swift
-└── Products/
+├── README.md
+└── README.ko.md
 ```
 
 ---

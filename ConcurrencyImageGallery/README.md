@@ -60,9 +60,11 @@ All experiments in this repository are implemented as isolated tabs inside the s
 
 ```text
 ConcurrencyImageGallery/
+├── ConcurrencyImageGallery.xcodeproj/
 ├── ConcurrencyImageGallery/
 │   ├── ConcurrencyImageGalleryApp.swift
 │   ├── TabView.swift
+│   ├── Assets.xcassets/
 │   ├── Models/
 │   │   ├── LoadedImage.swift
 │   │   └── PicsumImage.swift
@@ -84,7 +86,8 @@ ConcurrencyImageGallery/
 │           └── ImageCache.swift
 ├── ConcurrencyImageGalleryTests/
 │   └── ConcurrencyImageGalleryTests.swift
-└── Products/
+├── README.md
+└── README.ko.md
 ```
 
 ---
