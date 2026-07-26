@@ -1,5 +1,7 @@
 # ConcurrencyImageGallery
 
+[English](README.md)
+
 ## Big Idea
 Swift Concurrency
 
@@ -287,38 +289,3 @@ Product > Test
 - dependency injection
 - testability
 - Swift Testing
-
----
-
-## Documentation / Commit Convention
-
-이 프로젝트는 학습 과정과 구현 의도를 더 명확하게 남기기 위해 아래와 같은 태그를 사용할 수 있습니다.
-
-| Tag | Description | Example |
-| --- | --- | --- |
-| EXP | 새로운 동시성 실험 코드 추가 | `[EXP] implement parallel image loading tab` |
-| OBS | 실행 동작 관찰 내용 추가 | `[OBS] compare sequential and parallel loading time` |
-| LOG | 학습용 상태 표시 또는 로그 추가 | `[LOG] show loading progress in sequential tab` |
-| DOC | README 또는 학습 기록 문서 수정 | `[DOC] document actor cache flow` |
-| RFT | 코드 구조 리팩터링 | `[RFT] inject image service for testability` |
-| CMP | 동시성 동작 비교 | `[CMP] compare sequential and task group execution` |
-| FIX | 버그 또는 잘못된 동작 수정 | `[FIX] handle cancellation state in grid cell` |
-| TST | 테스트 추가 또는 개선 | `[TST] add cache deduplication test` |
-
----
-
-## Purpose
-
-이 프로젝트의 목적은 같은 문제를 여러 방식으로 구현하고 비교하면서 Swift Concurrency를 더 깊이 이해하는 데 있습니다.
-
-단순히 이미지 갤러리 앱을 만드는 것보다, 이 저장소는 앱이라는 맥락 안에서 동시성을 학습하기 위한 실험 프로젝트에 가깝습니다.
-
-각 탭을 독립된 기능 실험으로 구성함으로써 이 프로젝트는 다음을 목표로 합니다.
-
-- 순차 실행과 병렬 실행의 차이를 시각적으로 이해하기
-- suspension과 cancellation이 UI 동작에 어떤 영향을 주는지 관찰하기
-- actor가 공유 상태를 어떻게 안전하게 관리하는지 이해하기
-- 의존성 주입을 통해 동시성 코드를 테스트 가능하게 만들기
-- 직접 구현과 검증을 통해 Swift Concurrency에 대한 직관을 기르기
-
-이러한 구현 과정과 테스트 결과를 함께 문서화함으로써, 이 저장소는 Swift Concurrency와 Swift Testing을 학습하기 위한 기록이자 실용적인 참고 자료 역할을 합니다.
