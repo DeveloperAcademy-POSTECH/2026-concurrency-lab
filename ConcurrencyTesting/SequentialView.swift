@@ -31,6 +31,7 @@ struct SequentialView: View {
                     await viewModel.loadPhotos()
                 }
             }
+            .disabled(viewModel.isLoading)
             
             List(viewModel.photos) { photo in
                 Text("Photo \(photo.id) - \(photo.data.count) bytes")
