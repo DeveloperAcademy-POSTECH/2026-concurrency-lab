@@ -1,5 +1,14 @@
 # Concurrency Lab (2026)
 
+## Guardians of Concurrency
+
+| Name | GitHub | Challenge Response |
+| --- | --- | --- |
+| Cue | | |
+| Juni | | |
+| Sammy | | |
+ 
+
 ## Who can apply to the lab?
 Anyone who is interested in exploring ideas through concurrency code - including Swift Concurrency - is welcome to apply, regardless of experience level.
 
