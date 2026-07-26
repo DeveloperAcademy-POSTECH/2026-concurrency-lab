@@ -4,8 +4,8 @@
 
 | Name | GitHub | Challenge Response |
 | --- | --- | --- |
-| Cue | | |
-| Juni | | |
+| Cue | [@yuseongchae](https://github.com/yuseongchae) | Create a Swift Concurrency console log experiment that demonstrates how async/await handles Task execution through suspension and resumption, documented in a repository. |
+| Juni | [@dudwntjs](https://github.com/dudwntjs) | Design and implement an event-driven CoreBluetooth architecture using AsyncStream and a dedicated BLE Serial Queue.By doing so, analyze how the original Delegate-based architecture works and establish a baseline for improving its overall structure. |
 | Sammy | | |
  
 
