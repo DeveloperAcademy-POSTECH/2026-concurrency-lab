@@ -33,9 +33,10 @@ final class ParallelViewModel {
         progress = "0 / \(limit)"
         elapsedSeconds = 0
 
-        let start = Date()
+        let clock = ContinuousClock()
+        let start = clock.now
         defer {
-            elapsedSeconds = Date().timeIntervalSince(start)
+            elapsedSeconds = seconds(from: start.duration(to: clock.now))
             isLoading = false
         }
 
@@ -55,11 +56,16 @@ final class ParallelViewModel {
                 for try await loaded in group {
                     images.append(loaded)
                     progress = "\(images.count) / \(total)"
-                    elapsedSeconds = Date().timeIntervalSince(start)
+                    elapsedSeconds = seconds(from: start.duration(to: clock.now))
                 }
             }
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    private func seconds(from duration: Duration) -> Double {
+        let components = duration.components
+        return Double(components.seconds) + (Double(components.attoseconds) / 1_000_000_000_000_000_000)
     }
 }

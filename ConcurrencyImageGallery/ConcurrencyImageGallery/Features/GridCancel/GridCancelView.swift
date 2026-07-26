@@ -42,6 +42,7 @@ struct GridCancelCell: View {
 
     @State private var data: Data?
     @State private var didCancel = false
+    @State private var errorMessage: String?
 
     private let service = ImageService()
 
@@ -58,6 +59,10 @@ struct GridCancelCell: View {
             } else if didCancel {
                 Image(systemName: "xmark.circle")
                     .foregroundStyle(.secondary)
+            } else if let errorMessage {
+                Image(systemName: "exclamationmark.triangle")
+                    .foregroundStyle(.red)
+                    .accessibilityLabel(errorMessage)
             } else {
                 ProgressView()
             }
@@ -65,15 +70,21 @@ struct GridCancelCell: View {
         .clipped()
         .clipShape(RoundedRectangle(cornerRadius: 6))
         .task(id: image.id) {
-            
+            didCancel = false
+            errorMessage = nil
+
             do {
                 try await Task.sleep(for: .milliseconds(200))
                 try Task.checkCancellation()
                 let bytes = try await service.fetchImageData(from: image.downloadURL)
                 try Task.checkCancellation()
                 data = bytes
-            } catch {
+            } catch is CancellationError {
                 didCancel = true
+            } catch let error as URLError where error.code == .cancelled {
+                didCancel = true
+            } catch {
+                errorMessage = error.localizedDescription
             }
         }
     }
