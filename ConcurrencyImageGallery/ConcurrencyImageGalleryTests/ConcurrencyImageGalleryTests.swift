@@ -17,6 +17,49 @@ private struct MockImageService: ImageServing {
 
 private struct DummyError: Error {}
 
+private actor RequestProbe {
+    private var activeCount = 0
+    private var maximumActiveCount = 0
+    private var requestCount = 0
+
+    func beginRequest() {
+        activeCount += 1
+        requestCount += 1
+        maximumActiveCount = max(maximumActiveCount, activeCount)
+    }
+
+    func endRequest() {
+        activeCount -= 1
+    }
+
+    func snapshot() -> (maximumActiveCount: Int, requestCount: Int) {
+        (maximumActiveCount, requestCount)
+    }
+}
+
+private struct DelayedImageService: ImageServing {
+    let images: [PicsumImage]
+    let delay: Duration
+    let probe: RequestProbe
+
+    func fetchImageList(page: Int, limit: Int) async throws -> [PicsumImage] {
+        Array(images.prefix(limit))
+    }
+
+    func fetchImageData(from url: URL) async throws -> Data {
+        await probe.beginRequest()
+
+        do {
+            try await Task.sleep(for: delay)
+            await probe.endRequest()
+            return Data([1, 2, 3])
+        } catch {
+            await probe.endRequest()
+            throw error
+        }
+    }
+}
+
 struct ConcurrencyImageGalleryTests {
     @Test
     @MainActor
@@ -130,5 +173,65 @@ struct ConcurrencyImageGalleryTests {
         #expect(await counter.currentValue() == 1)
         #expect(await cache.missCount == 1)
         #expect(await cache.dedupedCount == 2)
+    }
+
+    @Test
+    @MainActor
+    func parallelLoadingRunsIndependentRequestsConcurrently() async throws {
+        let images = try (1...10).map { index in
+            PicsumImage(
+                id: String(index),
+                author: "Author \(index)",
+                width: 100,
+                height: 100,
+                downloadURL: try #require(URL(string: "https://example.com/\(index).jpg"))
+            )
+        }
+
+        var sequentialTimes: [Double] = []
+        var parallelTimes: [Double] = []
+
+        for _ in 0..<3 {
+            let sequentialProbe = RequestProbe()
+            let sequentialService = DelayedImageService(
+                images: images,
+                delay: .milliseconds(100),
+                probe: sequentialProbe
+            )
+            let sequentialViewModel = SequentialViewModel(
+                service: sequentialService,
+                limit: images.count
+            )
+
+            await sequentialViewModel.loadImages()
+            sequentialTimes.append(sequentialViewModel.elapsedSeconds)
+
+            let sequentialSnapshot = await sequentialProbe.snapshot()
+            #expect(sequentialSnapshot.maximumActiveCount == 1)
+            #expect(sequentialSnapshot.requestCount == images.count)
+
+            let parallelProbe = RequestProbe()
+            let parallelService = DelayedImageService(
+                images: images,
+                delay: .milliseconds(100),
+                probe: parallelProbe
+            )
+            let parallelViewModel = ParallelViewModel(
+                service: parallelService,
+                limit: images.count
+            )
+
+            await parallelViewModel.loadImages()
+            parallelTimes.append(parallelViewModel.elapsedSeconds)
+
+            let parallelSnapshot = await parallelProbe.snapshot()
+            #expect(parallelSnapshot.maximumActiveCount == images.count)
+            #expect(parallelSnapshot.requestCount == images.count)
+        }
+
+        let sequentialAverage = sequentialTimes.reduce(0, +) / Double(sequentialTimes.count)
+        let parallelAverage = parallelTimes.reduce(0, +) / Double(parallelTimes.count)
+
+        #expect(parallelAverage < sequentialAverage)
     }
 }
