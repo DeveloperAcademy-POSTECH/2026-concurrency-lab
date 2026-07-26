@@ -3,42 +3,57 @@
 [한국어](README.ko.md)
 
 ## Big Idea
-Swift Concurrency
 
-## Essential Question
-How does Swift Concurrency work, and why should it be used?
+**Swift Concurrency**
 
-## Challenge Response
-Build an image gallery app using Swift Concurrency concepts such as TaskGroup, Actor, and @MainActor.
+---
+
+## Essential Questions
+
+1. How does a loop containing `await` differ from an execution flow built with `TaskGroup`?
+2. How does the SwiftUI view lifecycle affect cancellation of asynchronous image requests?
+3. How can an actor safely manage shared cache state and in-flight requests?
+
+---
+
+## Challenge
+
+Implement the same image-loading problem using sequential execution, parallel execution, task cancellation, and an actor cache, then compare their execution flows and state changes.
+
+---
+
+## Challenge Statement
+
+Build an image gallery with `async/await`, `TaskGroup`, SwiftUI `.task`, and actors, then use experiments and tests to verify how each technique affects execution time, cancellation, and shared-state management.
 
 ---
 
 ## Overview
 
-This repository contains a SwiftUI-based learning project designed to explore how Swift Concurrency works through direct implementation and comparison.
+ConcurrencyImageGallery is a SwiftUI learning project that implements the same image-loading problem using several Swift Concurrency techniques.
 
-The goal of this project is not simply to use `async/await`, but to understand:
+The app contains four tabs.
 
-- how asynchronous image loading behaves in real UI code
-- how execution differs between sequential and parallel flows
-- when task cancellation occurs in SwiftUI
-- how actors isolate shared mutable state
-- how in-flight request deduplication can be implemented
-- how concurrency-heavy code can be tested using Swift Testing
+| Tab | Learning topic |
+| --- | --- |
+| Sequential | Sequential execution in a loop containing `await` |
+| Parallel | Structured concurrency with `withThrowingTaskGroup` |
+| Grid + Cancel | SwiftUI view lifecycle and task cancellation |
+| Actor Cache | Actor isolation, caching, and in-flight request deduplication |
 
-All experiments in this repository are implemented as isolated tabs inside the same app so that the same image-loading problem can be compared across different concurrency techniques.
+Each tab goes beyond demonstrating an implementation. Its behavior is compared through execution results and tests.
 
 ---
 
 ## Learning Goals
 
-- Understand the execution flow of `async/await`
-- Compare sequential and parallel execution behavior
-- Observe task cancellation through SwiftUI view lifecycle
-- Explore actor isolation and shared-state protection
-- Understand in-flight request deduplication
-- Practice writing testable concurrency code
-- Validate concurrency behavior with Swift Testing
+- Understand that `await` does not automatically create parallel execution.
+- Learn how to structure independent work with `TaskGroup`.
+- Observe cancellation caused by SwiftUI `.task` and the view lifecycle.
+- Distinguish cancellation from general network errors.
+- Isolate shared state with an actor and prevent data races.
+- Reuse an in-flight request to avoid duplicate downloads.
+- Verify concurrent behavior using dependency injection and Swift Testing.
 
 ---
 
@@ -47,9 +62,9 @@ All experiments in this repository are implemented as isolated tabs inside the s
 | Item | Value |
 | --- | --- |
 | Platform | iOS |
-| Language | Swift 6 |
+| Language | Swift 5 language mode |
 | UI | SwiftUI |
-| State Management | `@Observable` |
+| State Management | Observation (`@Observable`) |
 | Concurrency | Swift Concurrency |
 | Testing | Swift Testing |
 | Image Source | `picsum.photos` |
@@ -64,7 +79,6 @@ ConcurrencyImageGallery/
 ├── ConcurrencyImageGallery/
 │   ├── ConcurrencyImageGalleryApp.swift
 │   ├── TabView.swift
-│   ├── Assets.xcassets/
 │   ├── Models/
 │   │   ├── LoadedImage.swift
 │   │   └── PicsumImage.swift
@@ -72,18 +86,9 @@ ConcurrencyImageGallery/
 │   │   └── ImageService.swift
 │   └── Features/
 │       ├── Sequential/
-│       │   ├── SequentialView.swift
-│       │   └── SequentialViewModel.swift
 │       ├── Parallel/
-│       │   ├── ParallelView.swift
-│       │   └── ParallelViewModel.swift
 │       ├── GridCancel/
-│       │   ├── GridCancelView.swift
-│       │   └── GridCancelViewModel.swift
 │       └── ActorCache/
-│           ├── ActorCacheView.swift
-│           ├── ActorCacheViewModel.swift
-│           └── ImageCache.swift
 ├── ConcurrencyImageGalleryTests/
 │   └── ConcurrencyImageGalleryTests.swift
 ├── README.md
@@ -92,193 +97,220 @@ ConcurrencyImageGallery/
 
 ---
 
-## Core Files
+# Experiment 1: Sequential vs Parallel
 
-### `ConcurrencyImageGalleryApp.swift`
-The app entry point of the project.
+## Problem
 
-**Responsibilities:**
-- launches the app
-- provides the root scene
-- loads the root tab view
+Even when an asynchronous function uses `await`, image requests execute sequentially if each iteration waits for completion before continuing.
 
-### `TabView.swift`
-The root tab container of the app.
+```swift
+for item in list {
+    let data = try await service.fetchImageData(from: item.downloadURL)
+    images.append(LoadedImage(image: item, data: data))
+}
+```
 
-**Responsibilities:**
-- displays the learning tabs
-- separates each concurrency concept into its own screen
-- acts as the entry point for comparing execution models
+The image requests do not depend on one another, so they can execute concurrently. This experiment compares sequential execution with parallel execution using `TaskGroup`.
 
-### `PicsumImage.swift`
-Defines the shared image metadata model.
+## Approach
 
-**Responsibilities:**
-- decodes the `picsum.photos` API response
-- maps `download_url` into `downloadURL`
-- provides a shared model for all tabs
+The Parallel tab adds each image request as a child task of `withThrowingTaskGroup`.
 
-### `LoadedImage.swift`
-Defines the loaded image state used in UI rendering.
+```swift
+try await withThrowingTaskGroup(of: LoadedImage.self) { group in
+    for item in list {
+        group.addTask {
+            let data = try await service.fetchImageData(from: item.downloadURL)
+            return LoadedImage(image: item, data: data)
+        }
+    }
 
-**Responsibilities:**
-- stores downloaded image data together with image metadata
-- provides an identifiable model for SwiftUI rendering
+    for try await loaded in group {
+        images.append(loaded)
+    }
+}
+```
 
-### `ImageService.swift`
-Acts as the shared networking layer.
+Sequential execution completes one request at a time in list order. Parallel execution starts multiple requests and receives results in completion order.
 
-**Responsibilities:**
-- fetches image lists from `picsum.photos`
-- fetches image data from image URLs
-- provides an abstraction point for dependency injection and testing
+## Experimental Conditions
+
+A mock service with a fixed delay was used to isolate execution structure from external network conditions and URL caching.
+
+| Item | Condition |
+| --- | --- |
+| Device | iPhone 17 Pro Simulator |
+| OS | iOS 26.5 |
+| Image requests | 10 |
+| Delay per request | 100ms |
+| Repetitions | 3 |
+| External network | Not used |
+
+A `RequestProbe` actor recorded the number of active requests and the maximum request concurrency.
+
+## Results
+
+| Execution | 3-run average | Maximum concurrent requests | Total data requests |
+| --- | ---: | ---: | ---: |
+| Sequential | 1.03s | 1 | 10 |
+| Parallel | 0.10s | 10 | 10 |
+
+Both implementations performed the same number of requests. Sequential execution waited for ten 100ms requests one after another and took approximately one second. Parallel execution overlapped all ten requests and took approximately 0.1 seconds.
+
+These results compare execution structure under a controlled delay. Real requests to `picsum.photos` are affected by network conditions, server response time, and URL caching, so the result does not mean that parallel loading is always faster by the same factor.
+
+## Findings
+
+- `await` marks a point that waits for an asynchronous operation; it does not automatically create parallel execution.
+- Independent requests can be structured as child tasks in a `TaskGroup`.
+- A `TaskGroup` keeps its child tasks within the lifetime of the parent task.
+- Parallel results may complete in a different order from their input order.
+- A real service should also consider limiting concurrency when the request count grows.
 
 ---
 
-## Learning Tabs
+# Experiment 2: View Lifecycle and Task Cancellation
 
-### Tab 1 — Sequential
-**Files:**
-`SequentialView.swift`
-`SequentialViewModel.swift`
+## Problem
 
-**Purpose:**
-- demonstrates sequential image loading with `async/await`
-- shows that a `for` loop containing `await` still runs sequentially
-- serves as the baseline for comparison with later tabs
+If requests for off-screen grid cells continue running, they can perform unnecessary network work and state updates.
 
-**Concepts explored:**
-- `async/await`
-- `@MainActor`
-- suspension points
-- progress tracking
-- elapsed time measurement
+Treating every error as cancellation also makes it impossible to distinguish a network failure from work that is no longer needed.
 
-### Tab 2 — Parallel
-**Files:**
-`ParallelView.swift`
-`ParallelViewModel.swift`
+## Approach
 
-**Purpose:**
-- demonstrates parallel image loading using structured concurrency
-- compares performance and behavior against the sequential approach
-- shows how child tasks can run concurrently
+Each cell loads its image in `.task(id:)`, tied to the image identifier.
 
-**Concepts explored:**
-- `withThrowingTaskGroup`
-- structured concurrency
-- concurrent execution
-- task coordination
+```swift
+.task(id: image.id) {
+    do {
+        try await Task.sleep(for: .milliseconds(200))
+        try Task.checkCancellation()
+        let bytes = try await service.fetchImageData(from: image.downloadURL)
+        try Task.checkCancellation()
+        data = bytes
+    } catch is CancellationError {
+        didCancel = true
+    } catch let error as URLError where error.code == .cancelled {
+        didCancel = true
+    } catch {
+        errorMessage = error.localizedDescription
+    }
+}
+```
 
-### Tab 3 — Grid + Cancel
-**Files:**
-`GridCancelView.swift`
-`GridCancelViewModel.swift`
+No unstructured task is created inside the view task, allowing SwiftUI to propagate cancellation to the image request. `CancellationError` and `URLError.cancelled` are handled as cancellation, while other errors are displayed as failures.
 
-**Purpose:**
-- demonstrates cancellation behavior during scrolling
-- shows how SwiftUI automatically cancels tasks tied to disappearing views
-- visualizes how per-cell image loading interacts with view lifecycle
+## Results
 
-**Concepts explored:**
-- `.task(id:)`
-- task cancellation
-- `Task.checkCancellation()`
-- SwiftUI task lifecycle
+| Situation | UI state |
+| --- | --- |
+| The cell remains visible and the request completes | Image |
+| The cell task is cancelled | Cancellation icon |
+| A non-cancellation request error occurs | Error icon with an accessible error description |
 
-### Tab 4 — Actor Cache
-**Files:**
-`ActorCacheView.swift`
-`ActorCacheViewModel.swift`
-`ImageCache.swift`
+## Findings
 
-**Purpose:**
-- demonstrates actor-based shared-state protection
-- prevents duplicate downloads for repeated image requests
-- shows how in-flight requests can be reused
+- SwiftUI `.task` is tied to the view lifecycle.
+- Cancellation is cooperative and is observed at suspension points and `Task.checkCancellation()`.
+- Cancellation and general errors must be handled separately to avoid misclassifying real failures.
+- Creating an unstructured task inside a view task can escape SwiftUI's automatic cancellation flow.
 
-**Concepts explored:**
-- `actor`
-- actor isolation
-- shared mutable state protection
-- in-flight request deduplication
-- cache hit / miss behavior
+---
+
+# Experiment 3: Actor Cache and In-flight Deduplication
+
+## Problem
+
+When multiple tasks request the same image URL concurrently, starting a download for every caller duplicates network work and memory use.
+
+A basic memory cache can reuse data after the first download finishes, but it cannot prevent duplicate requests that arrive while that download is still running.
+
+## Approach
+
+The `ImageCache` actor stores completed data and in-flight tasks separately.
+
+```swift
+actor ImageCache {
+    private var storage: [URL: Data] = [:]
+    private var inFlight: [URL: Task<Data, Error>] = [:]
+}
+```
+
+Requests follow this flow.
+
+```text
+image(for:)
+├── data exists in storage → cache hit
+├── task exists in inFlight → reuse existing Task.value
+└── neither exists → create a new Task and store it in inFlight
+```
+
+Actor isolation serializes access to `storage`, `inFlight`, and the cache statistics.
+
+## Results
+
+Swift Testing verifies both a repeated request after completion and concurrent requests for the same URL.
+
+| Scenario | Hit | Miss | Deduplicated | Actual data requests |
+| --- | ---: | ---: | ---: | ---: |
+| Request the same URL twice sequentially | 1 | 1 | 0 | 1 |
+| Request the same URL three times concurrently | 0 | 1 | 2 | 1 |
+
+Only the first of the three concurrent callers created a download task. The other two callers waited for the same task stored in `inFlight`.
+
+## Findings
+
+- An actor safely serializes concurrent access to shared state.
+- Using an actor does not automatically deduplicate requests.
+- Storing the in-flight `Task` is necessary to merge duplicate requests that arrive before completion.
+- Multiple callers can await the same `Task.value` while the underlying data request runs only once.
 
 ---
 
 ## Testing
 
-This project also explores how Swift Concurrency code can be tested.
+Tests inject an `ImageServing` implementation and do not depend on the live network.
 
-The repository includes Swift Testing-based test cases located under:
+| Test | Responsibility |
+| --- | --- |
+| `sequentialViewModelLoadsImagesInOrder` | Sequential results and state transitions |
+| `sequentialViewModelStoresErrorWhenListLoadingFails` | List request failure state |
+| `parallelLoadingRunsIndependentRequestsConcurrently` | Sequential and parallel concurrency and timing |
+| `imageCacheResetClearsState` | Cache and statistics reset |
+| `imageCacheDeduplicatesInFlightRequests` | In-flight request deduplication |
+
+This makes it possible to verify execution order and shared-state changes without depending on UI rendering or an external server.
+
+---
+
+## Overall Findings
+
+- Asynchronous execution and parallel execution are different concepts.
+- Independent work can be parallelized structurally with `TaskGroup`.
+- SwiftUI `.task` propagates cancellation according to the view lifecycle.
+- Cancellation and general errors should be represented as different states.
+- An actor protects shared state, but cache and deduplication policies still require explicit design.
+- A fixed-delay mock and an actor-based probe make concurrent behavior reproducible in tests.
+
+---
+
+## Conclusion
+
+This project demonstrates the difference between sequential execution using `async/await` and parallel execution using `TaskGroup`. In a controlled experiment, ten independent requests reached a maximum concurrency of one in Sequential and ten in Parallel, reducing the observed duration from approximately 1.03 seconds to 0.10 seconds.
+
+It also handles task cancellation tied to the SwiftUI view lifecycle and distinguishes cancellation from general failures. Shared image state is isolated with an actor, and tests show that three concurrent requests for the same URL can be merged into one actual data request by reusing an in-flight task.
+
+The results show that the behavior and reliability of concurrent code depend less on concurrency syntax alone and more on how task relationships, lifetimes, and shared state are structured.
+
+---
+
+## Running the Project
+
+From the repository root, open the following project in Xcode and run it on an iOS simulator.
 
 ```text
-ConcurrencyImageGalleryTests/
-└── ConcurrencyImageGalleryTests.swift
+ConcurrencyImageGallery/ConcurrencyImageGallery.xcodeproj
 ```
 
-### Test Responsibilities
-- validate sequential loading success behavior
-- validate sequential loading failure behavior
-- validate actor cache reset behavior
-- validate in-flight request deduplication
-
-### Testing Focus
-This project does not treat testing as a separate concern from implementation. Instead, testing is used as part of the learning process to verify:
-
-- whether state updates occur as expected
-- whether dependency injection improves testability
-- whether concurrency-related logic can be isolated from real networking
-- whether actor behavior can be observed through tests
-
----
-
-## Running the App
-
-1. Open the project in Xcode.
-2. Select the `ConcurrencyImageGallery` scheme.
-3. Build and run on an iOS simulator.
-4. Explore each tab and compare behavior:
-   - Sequential
-   - Parallel
-   - Grid + Cancel
-   - Actor Cache
-
----
-
-## Running the Tests
-
-In Xcode:
-
-1. Open the `ConcurrencyImageGallery` project
-2. Select the test target or main scheme
-3. Run tests with `Product > Test`
-
-You can also run individual Swift Testing cases directly from the gutter in Xcode.
-
----
-
-## Prerequisites
-
-This project requires:
-
-- Xcode with Swift 6 support
-- iOS Simulator
-- SwiftUI
-- Swift Testing
-- Internet connection for runtime image loading from `picsum.photos`
-
----
-
-## Key Concepts
-
-- `async / await`
-- `Task`
-- structured concurrency
-- task groups
-- cancellation
-- `@MainActor`
-- `actor`
-- dependency injection
-- testability
-- Swift Testing
+Run the tests with `Product > Test` in Xcode.

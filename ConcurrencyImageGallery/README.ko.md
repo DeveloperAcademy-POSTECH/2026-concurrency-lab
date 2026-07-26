@@ -3,43 +3,57 @@
 [English](README.md)
 
 ## Big Idea
-Swift Concurrency
 
-## Essential Question
-Swift Concurrency는 어떻게 동작하며, 왜 사용해야 할까?
+**Swift Concurrency**
 
-## Challenge Response
-TaskGroup, Actor, @MainActor와 같은 Swift Concurrency 개념을 사용해 이미지 갤러리 앱을 구현한다.
+---
+
+## Essential Questions
+
+1. `await`를 사용하는 반복문과 `TaskGroup`을 사용하는 실행 흐름은 어떻게 다를까?
+2. SwiftUI View의 생명주기는 비동기 이미지 요청의 취소에 어떤 영향을 줄까?
+3. actor를 사용하면 공유 캐시와 진행 중인 요청을 어떻게 안전하게 관리할 수 있을까?
+
+---
+
+## Challenge
+
+같은 이미지 로딩 문제를 순차 실행, 병렬 실행, Task 취소, actor 캐시로 각각 구현하고 실행 흐름과 상태 변화를 비교한다.
+
+---
+
+## Challenge Statement
+
+`async/await`, `TaskGroup`, SwiftUI의 `.task`, actor를 사용해 이미지 갤러리를 구현하고, 각 동시성 기법이 실행 시간, 취소, 공유 상태 관리에 미치는 영향을 실험과 테스트로 검증한다.
 
 ---
 
 ## Overview
 
-이 저장소는 Swift Concurrency를 직접 구현하고 비교하면서 학습하기 위해 만든 SwiftUI 기반 학습 프로젝트입니다.
+ConcurrencyImageGallery는 하나의 이미지 로딩 문제를 서로 다른 Swift Concurrency 방식으로 구현한 SwiftUI 학습 프로젝트다.
 
-이 프로젝트의 목표는 단순히 `async/await`를 사용하는 것이 아니라, 다음을 이해하는 데 있습니다.
+앱은 다음 네 개의 탭으로 구성된다.
 
-- 비동기 이미지 로딩이 실제 UI 코드에서 어떻게 동작하는가
-- 순차 실행과 병렬 실행은 어떤 차이를 보이는가
-- SwiftUI에서 Task 취소는 언제 발생하는가
-- actor는 공유 상태를 어떻게 안전하게 보호하는가
-- in-flight 요청 deduplication은 어떻게 구현할 수 있는가
-- 동시성 코드의 테스트 가능성은 어떻게 확보할 수 있는가
-- Swift Testing으로 이런 동작을 어떻게 검증할 수 있는가
+| Tab | 학습 주제 |
+| --- | --- |
+| Sequential | `await`가 포함된 반복문의 순차 실행 |
+| Parallel | `withThrowingTaskGroup`을 이용한 구조적 동시성 |
+| Grid + Cancel | SwiftUI View 생명주기와 Task 취소 |
+| Actor Cache | actor 격리, 캐시, 진행 중인 요청 중복 제거 |
 
-이 저장소의 모든 실험은 하나의 앱 안에서 독립된 탭으로 구성되어 있으며, 같은 이미지 로딩 문제를 서로 다른 동시성 기법으로 비교할 수 있도록 설계되었습니다.
+각 탭은 구현 예시를 보여주는 데서 끝나지 않고, 실행 결과와 테스트를 통해 동작을 비교할 수 있도록 구성했다.
 
 ---
 
 ## Learning Goals
 
-- `async/await`의 실행 흐름 이해하기
-- 순차 실행과 병렬 실행의 차이 비교하기
-- SwiftUI 뷰 생명주기를 통해 Task 취소 관찰하기
-- actor 격리와 공유 상태 보호 이해하기
-- in-flight 요청 deduplication 이해하기
-- 테스트 가능한 동시성 코드 작성 연습하기
-- Swift Testing으로 동시성 동작 검증하기
+- `await`가 자동으로 병렬 실행을 만들지 않는다는 점을 이해한다.
+- 서로 독립적인 작업을 `TaskGroup`으로 구조화하는 방법을 익힌다.
+- SwiftUI의 `.task`와 View 생명주기에 따른 취소를 관찰한다.
+- 취소와 일반 네트워크 오류를 구분한다.
+- actor로 공유 상태를 격리하고 데이터 경쟁을 방지한다.
+- 진행 중인 동일 요청을 재사용해 중복 다운로드를 방지한다.
+- 의존성 주입과 Swift Testing으로 동시성 동작을 검증한다.
 
 ---
 
@@ -48,9 +62,9 @@ TaskGroup, Actor, @MainActor와 같은 Swift Concurrency 개념을 사용해 이
 | Item | Value |
 | --- | --- |
 | Platform | iOS |
-| Language | Swift 6 |
+| Language | Swift 5 language mode |
 | UI | SwiftUI |
-| State Management | `@Observable` |
+| State Management | Observation (`@Observable`) |
 | Concurrency | Swift Concurrency |
 | Testing | Swift Testing |
 | Image Source | `picsum.photos` |
@@ -65,7 +79,6 @@ ConcurrencyImageGallery/
 ├── ConcurrencyImageGallery/
 │   ├── ConcurrencyImageGalleryApp.swift
 │   ├── TabView.swift
-│   ├── Assets.xcassets/
 │   ├── Models/
 │   │   ├── LoadedImage.swift
 │   │   └── PicsumImage.swift
@@ -73,18 +86,9 @@ ConcurrencyImageGallery/
 │   │   └── ImageService.swift
 │   └── Features/
 │       ├── Sequential/
-│       │   ├── SequentialView.swift
-│       │   └── SequentialViewModel.swift
 │       ├── Parallel/
-│       │   ├── ParallelView.swift
-│       │   └── ParallelViewModel.swift
 │       ├── GridCancel/
-│       │   ├── GridCancelView.swift
-│       │   └── GridCancelViewModel.swift
 │       └── ActorCache/
-│           ├── ActorCacheView.swift
-│           ├── ActorCacheViewModel.swift
-│           └── ImageCache.swift
 ├── ConcurrencyImageGalleryTests/
 │   └── ConcurrencyImageGalleryTests.swift
 ├── README.md
@@ -93,202 +97,220 @@ ConcurrencyImageGallery/
 
 ---
 
-## Core Files
+# Experiment 1: Sequential vs Parallel
 
-### `ConcurrencyImageGalleryApp.swift`
-앱의 시작점입니다.
+## Problem
 
-**Responsibilities:**
-- 앱 실행
-- 루트 Scene 제공
-- 루트 탭 뷰 로드
+비동기 함수에 `await`를 사용하더라도 다음 코드처럼 반복문 안에서 한 번씩 기다리면 이미지 요청은 순차적으로 실행된다.
 
-### `TabView.swift`
-앱의 루트 탭 컨테이너입니다.
+```swift
+for item in list {
+    let data = try await service.fetchImageData(from: item.downloadURL)
+    images.append(LoadedImage(image: item, data: data))
+}
+```
 
-**Responsibilities:**
-- 학습용 탭 표시
-- 각 동시성 개념을 독립된 화면으로 분리
-- 서로 다른 실행 모델을 비교하는 진입점 역할 수행
+이미지 요청들은 서로 의존하지 않으므로 동시에 실행할 수 있다. 이 실험에서는 순차 실행과 `TaskGroup`을 사용한 병렬 실행의 동작 차이를 비교했다.
 
-### `PicsumImage.swift`
-공통 이미지 메타데이터 모델입니다.
+## Approach
 
-**Responsibilities:**
-- `picsum.photos` API 응답 디코딩
-- `download_url`을 `downloadURL`로 매핑
-- 모든 탭에서 공통으로 사용하는 이미지 모델 제공
+Parallel 탭에서는 각 이미지 요청을 `withThrowingTaskGroup`의 자식 Task로 추가했다.
 
-### `LoadedImage.swift`
-다운로드가 완료된 이미지 상태를 나타내는 모델입니다.
+```swift
+try await withThrowingTaskGroup(of: LoadedImage.self) { group in
+    for item in list {
+        group.addTask {
+            let data = try await service.fetchImageData(from: item.downloadURL)
+            return LoadedImage(image: item, data: data)
+        }
+    }
 
-**Responsibilities:**
-- 이미지 메타데이터와 다운로드된 `Data`를 함께 저장
-- SwiftUI 렌더링을 위한 식별 가능한 모델 제공
+    for try await loaded in group {
+        images.append(loaded)
+    }
+}
+```
 
-### `ImageService.swift`
-공통 네트워크 레이어입니다.
+순차 실행은 목록 순서대로 한 요청씩 완료한다. 병렬 실행은 여러 요청을 동시에 시작하고 먼저 완료된 결과부터 받는다.
 
-**Responsibilities:**
-- `picsum.photos`에서 이미지 목록 가져오기
-- 이미지 URL로부터 실제 이미지 데이터 가져오기
-- 의존성 주입과 테스트를 위한 추상화 지점 제공
+## Experimental Conditions
+
+외부 네트워크 속도와 URL 캐시의 영향을 제외하고 실행 구조만 비교하기 위해 지연 시간이 고정된 Mock Service를 사용했다.
+
+| Item | Condition |
+| --- | --- |
+| Device | iPhone 17 Pro Simulator |
+| OS | iOS 26.5 |
+| Image requests | 10 |
+| Delay per request | 100ms |
+| Repetitions | 3 |
+| External network | 사용하지 않음 |
+
+`RequestProbe` actor로 현재 실행 중인 요청 수와 최대 동시 요청 수도 함께 기록했다.
+
+## Results
+
+| Execution | 3회 평균 시간 | 최대 동시 요청 수 | 전체 데이터 요청 수 |
+| --- | ---: | ---: | ---: |
+| Sequential | 1.03s | 1 | 10 |
+| Parallel | 0.10s | 10 | 10 |
+
+두 방식 모두 같은 수의 요청을 수행했지만, Sequential은 각 100ms 요청을 차례로 기다려 약 1초가 걸렸다. Parallel은 10개 요청이 겹쳐 실행되어 약 0.1초가 걸렸다.
+
+이 결과는 통제된 지연 환경에서 실행 구조의 차이를 확인한 것이다. 실제 `picsum.photos` 요청 시간은 네트워크 상태, 서버 응답, URL 캐시의 영향을 받으므로 항상 같은 배수로 빨라진다는 의미는 아니다.
+
+## Findings
+
+- `await`는 비동기 함수의 완료를 기다리는 지점이며 자동으로 병렬 실행을 만들지 않는다.
+- 서로 독립적인 요청은 `TaskGroup`의 자식 Task로 구성할 수 있다.
+- `TaskGroup`은 모든 자식 Task가 끝날 때까지 부모 Task의 범위 안에서 관리된다.
+- 병렬 실행 결과의 완료 순서는 입력 순서와 다를 수 있다.
+- 실제 서비스에서는 요청 수가 많을 때 동시 실행 개수 제한도 함께 고려해야 한다.
 
 ---
 
-## Learning Tabs
+# Experiment 2: View Lifecycle and Task Cancellation
 
-### Tab 1 — Sequential
-**Files:**
-`SequentialView.swift`
-`SequentialViewModel.swift`
+## Problem
 
-**Purpose:**
-- `async/await`를 사용한 순차 이미지 로딩을 보여준다
-- `await`가 포함된 `for` 루프가 여전히 순차적으로 실행된다는 점을 보여준다
-- 이후 탭과 비교하기 위한 기준점 역할을 한다
+이미지 그리드에서 화면 밖으로 사라진 셀의 요청이 계속 실행되면 더 이상 필요하지 않은 네트워크 작업과 상태 변경이 발생할 수 있다.
 
-**Concepts explored:**
-- `async/await`
-- `@MainActor`
-- suspension point
-- 진행률 표시
-- 경과 시간 측정
+또한 모든 오류를 취소로 처리하면 실제 네트워크 장애와 사용자가 더 이상 필요로 하지 않는 작업의 취소를 구분할 수 없다.
 
-### Tab 2 — Parallel
-**Files:**
-`ParallelView.swift`
-`ParallelViewModel.swift`
+## Approach
 
-**Purpose:**
-- 구조적 동시성을 사용한 병렬 이미지 로딩을 보여준다
-- 순차 실행 방식과 성능 및 동작 차이를 비교한다
-- 여러 자식 Task가 동시에 실행될 수 있음을 보여준다
+각 셀은 이미지 ID와 연결된 `.task(id:)`에서 이미지를 요청한다.
 
-**Concepts explored:**
-- `withThrowingTaskGroup`
-- 구조적 동시성
-- 동시 실행
-- Task 조정
+```swift
+.task(id: image.id) {
+    do {
+        try await Task.sleep(for: .milliseconds(200))
+        try Task.checkCancellation()
+        let bytes = try await service.fetchImageData(from: image.downloadURL)
+        try Task.checkCancellation()
+        data = bytes
+    } catch is CancellationError {
+        didCancel = true
+    } catch let error as URLError where error.code == .cancelled {
+        didCancel = true
+    } catch {
+        errorMessage = error.localizedDescription
+    }
+}
+```
 
-### Tab 3 — Grid + Cancel
-**Files:**
-`GridCancelView.swift`
-`GridCancelViewModel.swift`
+SwiftUI가 셀과 연결된 Task를 취소할 수 있도록 별도의 비구조적 Task를 만들지 않았다. 취소는 `CancellationError`와 `URLError.cancelled`로 분리하고, 그 외 오류는 실패 상태로 표시한다.
 
-**Purpose:**
-- 스크롤 중 발생하는 Task 취소 동작을 보여준다
-- SwiftUI가 사라지는 뷰에 연결된 Task를 어떻게 자동 취소하는지 보여준다
-- 셀 단위 이미지 로딩과 뷰 생명주기의 관계를 관찰한다
+## Results
 
-**Concepts explored:**
-- `.task(id:)`
-- Task 취소
-- `Task.checkCancellation()`
-- SwiftUI Task 생명주기
+| Situation | UI state |
+| --- | --- |
+| 셀이 유지되고 요청이 완료됨 | 이미지 표시 |
+| 셀 Task가 취소됨 | 취소 아이콘 표시 |
+| 취소가 아닌 요청 오류 발생 | 오류 아이콘과 접근성 오류 설명 표시 |
 
-### Tab 4 — Actor Cache
-**Files:**
-`ActorCacheView.swift`
-`ActorCacheViewModel.swift`
-`ImageCache.swift`
+## Findings
 
-**Purpose:**
-- actor 기반 공유 상태 보호를 보여준다
-- 같은 이미지 요청에 대해 중복 다운로드를 방지한다
-- in-flight 요청을 재사용하는 방식을 보여준다
+- SwiftUI의 `.task`는 View의 생명주기와 연결된다.
+- 취소는 협력적으로 동작하므로 suspension point와 `Task.checkCancellation()`에서 확인된다.
+- 취소와 일반 오류를 분리해야 실제 실패를 취소로 오해하지 않는다.
+- View와 연결된 작업 안에서 다시 비구조적 Task를 만들면 SwiftUI의 자동 취소 흐름에서 벗어날 수 있다.
 
-**Concepts explored:**
-- `actor`
-- actor 격리
-- 공유 상태 보호
-- in-flight 요청 deduplication
-- cache hit / miss 동작
+---
+
+# Experiment 3: Actor Cache and In-flight Deduplication
+
+## Problem
+
+여러 Task가 같은 이미지 URL을 동시에 요청할 때 각각 다운로드를 시작하면 네트워크 요청과 메모리 사용이 중복된다.
+
+단순한 메모리 캐시는 첫 번째 다운로드가 끝난 뒤에는 재사용할 수 있지만, 다운로드가 아직 진행 중인 시점에 들어온 중복 요청은 막지 못한다.
+
+## Approach
+
+`ImageCache` actor가 완료된 데이터와 진행 중인 Task를 각각 관리한다.
+
+```swift
+actor ImageCache {
+    private var storage: [URL: Data] = [:]
+    private var inFlight: [URL: Task<Data, Error>] = [:]
+}
+```
+
+요청 처리 순서는 다음과 같다.
+
+```text
+image(for:)
+├── storage에 데이터가 있음 → cache hit
+├── inFlight에 Task가 있음 → 기존 Task.value 재사용
+└── 둘 다 없음 → 새 Task 생성 후 inFlight에 저장
+```
+
+actor 격리를 통해 `storage`, `inFlight`, 통계 값에 대한 접근을 직렬화한다.
+
+## Results
+
+Swift Testing에서 같은 URL에 대한 완료 후 재요청과 동시 요청을 각각 검증했다.
+
+| Scenario | Hit | Miss | Deduplicated | 실제 데이터 요청 |
+| --- | ---: | ---: | ---: | ---: |
+| 같은 URL을 순서대로 2회 요청 | 1 | 1 | 0 | 1 |
+| 같은 URL을 동시에 3회 요청 | 0 | 1 | 2 | 1 |
+
+동시 요청 3개 중 첫 번째 요청만 다운로드 Task를 생성했고, 나머지 두 요청은 `inFlight`에 저장된 같은 Task의 결과를 기다렸다.
+
+## Findings
+
+- actor는 공유 상태에 대한 동시 접근을 안전하게 직렬화한다.
+- actor를 사용하는 것만으로 중복 요청이 자동 제거되지는 않는다.
+- 진행 중인 `Task`를 상태로 저장해야 완료 전 들어오는 중복 요청도 하나로 합칠 수 있다.
+- `Task.value`를 여러 호출자가 기다려도 실제 데이터 요청은 한 번만 실행된다.
 
 ---
 
 ## Testing
 
-이 프로젝트는 Swift Concurrency를 학습하는 것뿐 아니라, 동시성 코드를 어떻게 테스트할 수 있는지도 함께 탐구합니다.
+테스트는 실제 네트워크를 사용하지 않고 `ImageServing`을 주입해 실행한다.
 
-테스트 코드는 아래 위치에 있습니다.
+| Test | 검증 내용 |
+| --- | --- |
+| `sequentialViewModelLoadsImagesInOrder` | 순차 로딩 결과와 상태 변경 |
+| `sequentialViewModelStoresErrorWhenListLoadingFails` | 목록 요청 실패 상태 |
+| `parallelLoadingRunsIndependentRequestsConcurrently` | 순차·병렬 최대 동시 요청 수와 실행 시간 |
+| `imageCacheResetClearsState` | 캐시와 통계 초기화 |
+| `imageCacheDeduplicatesInFlightRequests` | 진행 중인 동일 요청의 중복 제거 |
+
+이 테스트를 통해 UI나 외부 서버 상태에 의존하지 않고 동시성 로직의 실행 순서와 공유 상태 변화를 검증할 수 있다.
+
+---
+
+## Overall Findings
+
+- 비동기 실행과 병렬 실행은 같은 개념이 아니다.
+- 독립적인 작업은 `TaskGroup`을 통해 구조적으로 병렬화할 수 있다.
+- SwiftUI의 `.task`는 View 생명주기와 연결되며 취소를 전달한다.
+- 취소와 일반 오류는 서로 다른 상태로 처리해야 한다.
+- actor는 공유 상태를 보호하지만 캐시와 중복 제거 정책은 직접 설계해야 한다.
+- 고정 지연 Mock과 actor 기반 Probe를 사용하면 동시 실행 동작을 반복 가능한 테스트로 검증할 수 있다.
+
+---
+
+## Conclusion
+
+이 프로젝트를 통해 `async/await`만 사용하는 순차 실행과 `TaskGroup`을 이용한 병렬 실행의 차이를 확인했다. 통제된 실험에서 10개의 독립적인 요청은 Sequential에서 최대 1개, Parallel에서 최대 10개가 동시에 실행되었고 실행 시간도 약 1.03초에서 0.10초로 줄었다.
+
+또한 SwiftUI View의 생명주기와 연결된 Task 취소를 처리하고, 취소와 일반 오류를 구분했다. 공유 이미지 상태는 actor로 격리했으며, 진행 중인 Task를 재사용해 동일 URL에 대한 동시 요청 3개를 실제 데이터 요청 1개로 합칠 수 있음을 테스트로 검증했다.
+
+이 결과는 Swift Concurrency의 문법 자체보다 작업의 관계, 생명주기, 공유 상태를 어떻게 구조화하느냐가 동시성 코드의 동작과 안정성을 결정한다는 점을 보여준다.
+
+---
+
+## Running the Project
+
+저장소 루트에서 다음 프로젝트를 Xcode로 열고 iOS 시뮬레이터에서 실행한다.
 
 ```text
-ConcurrencyImageGalleryTests/
-└── ConcurrencyImageGalleryTests.swift
+ConcurrencyImageGallery/ConcurrencyImageGallery.xcodeproj
 ```
 
-### Test Responsibilities
-- Sequential 로딩 성공 동작 검증
-- Sequential 로딩 실패 동작 검증
-- actor cache reset 동작 검증
-- in-flight 요청 deduplication 검증
-
-### Testing Focus
-이 프로젝트는 테스트를 구현 이후의 별도 작업으로 보지 않습니다. 테스트는 학습 과정의 일부로 사용되며, 다음을 검증하는 데 목적이 있습니다.
-
-- 상태 변화가 기대한 대로 발생하는가
-- 의존성 주입이 테스트 가능성을 높이는가
-- 실제 네트워크 없이 동시성 로직을 분리해 검증할 수 있는가
-- actor 동작을 테스트로 관찰할 수 있는가
-
----
-
-## Running the App
-
-Xcode에서 프로젝트를 열고 iOS 시뮬레이터에서 실행합니다.
-
-앱은 다음 탭으로 구성됩니다.
-
-```text
-Sequential
-Parallel
-Grid + Cancel
-Actor Cache
-```
-
-각 탭은 같은 이미지 로딩 문제를 서로 다른 동시성 방식으로 구현한 예제를 보여줍니다.
-
----
-
-## Running the Tests
-
-Xcode에서 아래 메뉴를 실행합니다.
-
-```text
-Product > Test
-```
-
-테스트 타깃은 Swift Testing을 사용하며, 다음과 같은 예제를 포함합니다.
-
-- view model 상태 검증
-- mock service 기반 실패 처리 검증
-- actor cache 동작 검증
-- 동시 요청 deduplication 검증
-
----
-
-## Prerequisites
-
-이 프로젝트를 실행하려면 다음이 필요합니다.
-
-- Swift 6를 지원하는 Xcode
-- iOS Simulator
-- SwiftUI
-- Swift Testing
-- `picsum.photos`에서 이미지를 불러오기 위한 인터넷 연결
-
----
-
-## Key Concepts
-
-- `async / await`
-- `Task`
-- 구조적 동시성
-- task group
-- cancellation
-- `@MainActor`
-- `actor`
-- dependency injection
-- testability
-- Swift Testing
+테스트는 Xcode의 `Product > Test`에서 실행할 수 있다.
