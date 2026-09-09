@@ -1,0 +1,10 @@
+{
+  "theme": {
+    "color": {
+      "fill-blue": "#1D74F2",
+      "figure-blue": "#1D74F2",
+      "standard-blue": "#1D74F2",
+      "fill-light-blue-secondary": "color-mix(in srgb, #1D74F2 18%, white)"
+    }
+  }
+}
